@@ -2,6 +2,7 @@
 
 import configurations as config
 import numpy as np
+from save_measurement import save_velocities
 
 def getVelocities(previous, current, timeInBetweenScans):
     
@@ -11,10 +12,11 @@ def getVelocities(previous, current, timeInBetweenScans):
         return resultIndices
     else:
         velocity = (current - previous) / timeInBetweenScans
-
+        save_velocities("velocities.csv", velocity)
+    
     print("dt:", timeInBetweenScans)
-    print("velocity sample:", velocity[:10])  # nur erste 10 Werte!
-    print("min:", np.min(velocity), "max:", np.max(velocity))
+    print("velocity sample:", velocity[500:530])  # 30 values in front area of the sensor
+    print("min:", np.min(velocity), "max:", np.max(velocity)) # max and min values in one scan 
     print("---------------------------")
     
     return velocity

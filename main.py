@@ -7,8 +7,9 @@ from data_acquisition import LidarReader
 from get_velocities import getVelocities
 
 def main(): 
+    print("vor LidarReader")
     lidar = LidarReader()
-	
+    print("start nach objekterzeugung")
     # prepare plot
     plt.ion()
     fig, ax = plt.subplots()
@@ -20,10 +21,11 @@ def main():
     ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
     
     # capture the very first scan
+    print("vor getScan")
     r, x, y, timestamp = lidar.getScan()
     previousScan = r.copy()
     previousTimestamp = timestamp
-
+    print("nach getScan und vor loop")
     while True:
 	    r, x, y, timestamp = lidar.getScan()
 	    

@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.env/
+
+# OS files
+.DS_Store
+
+# Logs / data files (optional)
+*.log
+
+# Measurement data
+scan.csv
+velocity.csv
+
+# Matplotlib output
+*.png

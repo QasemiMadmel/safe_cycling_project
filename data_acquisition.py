@@ -4,6 +4,7 @@ import time
 import socket
 import numpy as np 
 import configurations as config
+from save_measurement import save_scan
 
 
 class LidarReader: 
@@ -63,8 +64,10 @@ class LidarReader:
                         x = r * np.cos(self.angleRad)
                         y = r * np.sin(self.angleRad)
                         t = time.time()
+                        
+                        save_scan("scan.csv", r)
 
-                        gotScan
+                        gotScan = True
                         return r, x, y, t
 
 
