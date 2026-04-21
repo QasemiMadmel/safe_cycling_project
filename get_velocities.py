@@ -2,21 +2,38 @@
 
 import configurations as config
 import numpy as np
-from save_measurement import save_velocities
+import os
+from save_measurement import save_velocities_radial
+from save_measurement import save_values_x_y
 
-def getVelocities(previous, current, timeInBetweenScans):
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+measurement_dir = os.path.join(BASE_DIR, "measurements")
+os.makedirs(measurement_dir, exist_ok=True)
+
+filepath_radial = os.path.join(measurement_dir, "radial_velocities.csv")
+filepath_xy = os.path.join(measurement_dir, "velocities_x_y.csv")
+
+def getVelocitiesRadial(previous, current, timeInBetweenScans):
     
     velocity = []
     if timeInBetweenScans == 0:
         print("time between scans is zero, skipping")
-        return resultIndices
+        return 
     else:
         velocity = (current - previous) / timeInBetweenScans
-        save_velocities("velocities.csv", velocity)
+        save_velocities_radial(filepath_radial, velocity)
     
-    print("dt:", timeInBetweenScans)
-    print("velocity sample:", velocity[500:530])  # 30 values in front area of the sensor
-    print("min:", np.min(velocity), "max:", np.max(velocity)) # max and min values in one scan 
-    print("---------------------------")
+    return 
     
-    return velocity
+def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenScans, t):
+
+    if timeInBetweenScans == 0:
+        print("time between scans is zero, skipping")
+        return 
+    else:
+        velocityX = (xCurrent - xPrevious) / timeInBetweenScans
+        velocityY = (yCurrent - yPrevious) / timeInBetweenScans
+    
+    save_values_x_y(filepath_xy, velocityX, velocityY, t)
+    
+    return 

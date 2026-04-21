@@ -1,48 +1,47 @@
 # main.py
 
 import numpy as np
-import matplotlib.pyplot as plt 
-import configurations as config 
+import matplotlib.pyplot as plt
+import configurations as config
 from data_acquisition import LidarReader
-from get_velocities import getVelocities
+from get_velocities import getVelocitiesRadial
+from get_velocities import getXandYVelocities
 
-def main(): 
-    print("vor LidarReader")
+def main():
+
     lidar = LidarReader()
-    print("start nach objekterzeugung")
-    # prepare plot
+
     plt.ion()
     fig, ax = plt.subplots()
     sc = ax.scatter([], [], s=2)
-    #scMoves = ax.scatter([], [], s=10)
-
     ax.set_aspect('equal')
     ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
     ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
-    
-    # capture the very first scan
-    print("vor getScan")
+
     r, x, y, timestamp = lidar.getScan()
     previousScan = r.copy()
+    previousValuesX = x.copy()
+    previousValuesY = y.copy()
     previousTimestamp = timestamp
-    print("nach getScan und vor loop")
+
     while True:
-	    r, x, y, timestamp = lidar.getScan()
-	    
-	    sc.set_offsets(list(zip(x, y)))
-	    
-	    currentScan = r
-	    dt = timestamp - previousTimestamp
-        
-	    indicesOfMovingObject = getVelocities(previousScan, currentScan, dt)
-	    
-	    points = np.column_stack((x, y))
-	    sc.set_offsets(points)
-	    plt.pause(0.001)
-	    
-	    previousScan = currentScan.copy()
-	    previousTimestamp = timestamp
- 
+        r, x, y, timestamp = lidar.getScan()
+
+        currentScan = r
+        currentX = x
+        currentY = y
+        dt = timestamp - previousTimestamp
+
+        getVelocitiesRadial(previousScan, currentScan, dt)
+        #getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+
+        sc.set_offsets(np.column_stack((x, y)))
+        plt.pause(0.001)
+        previousScan = currentScan.copy()
+        previousValuesX = currentX.copy()
+        previousValuesY = currentY.copy()
+        previousTimestamp = timestamp
+
 if __name__ == "__main__":
     main()
-		
+
