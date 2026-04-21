@@ -159,6 +159,6 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=811):
     plt.legend()
     plt.show()
 
-# playback_lidar()
-# plot_5_scans_r(filepath_r, 100)
-plot_5_scans_xy(filepath_xy, 50)
+playback_lidar()
+#plot_5_scans_r(filepath_r, 100)
+#plot_5_scans_xy(filepath_xy, 50)

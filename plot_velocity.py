@@ -52,5 +52,5 @@ def plot_x_y_velocities():
     plt.show()
     
     
-#plot_x_y_velocities()    
-plot_radial_velocities()
+plot_x_y_velocities()    
+# plot_radial_velocities()

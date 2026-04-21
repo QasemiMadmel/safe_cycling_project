@@ -32,8 +32,8 @@ def main():
         currentY = y
         dt = timestamp - previousTimestamp
 
-        getVelocitiesRadial(previousScan, currentScan, dt)
-        #getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+        #getVelocitiesRadial(previousScan, currentScan, dt)
+        getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
 
         sc.set_offsets(np.column_stack((x, y)))
         plt.pause(0.001)
