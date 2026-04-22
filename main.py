@@ -25,12 +25,12 @@ def main():
     try:
         lidar = LidarReader()
 
-        # plt.ion()
-        # fig, ax = plt.subplots()
-        # sc = ax.scatter([], [], s=2)
-        # ax.set_aspect('equal')
-        # ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
-        # ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
+        plt.ion()
+        fig, ax = plt.subplots()
+        sc = ax.scatter([], [], s=2)
+        ax.set_aspect('equal')
+        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
+        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
 
         r, x, y, timestamp = lidar.getScan()
         previousScan = r.copy()
@@ -56,8 +56,8 @@ def main():
                 timestamp
             )
 
-            # sc.set_offsets(np.column_stack((x, y)))
-            # plt.pause(0.001)
+            sc.set_offsets(np.column_stack((x, y)))
+            plt.pause(0.001)
 
             previousScan = currentScan.copy()
             previousValuesX = currentX.copy()

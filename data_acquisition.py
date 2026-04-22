@@ -7,9 +7,17 @@ import configurations as config
 from save_measurement import save_scan
 from save_measurement import save_values_x_y
 import os
+from filename_handler import create_filename, get_common_suffix
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-filepath_1 = os.path.join(BASE_DIR, "measurements", "scan.csv")
-filepath_2 = os.path.join(BASE_DIR, "measurements", "scan_xy.csv")
+
+config.suffix = get_common_suffix()
+
+filepath_scan_r = create_filename(BASE_DIR, "scan", config.suffix)
+filepath_scan_xy = create_filename(BASE_DIR, "scan_xy", config.suffix)
+
+#filepath_scan_r = create_filename(BASE_DIR, "scan")
+#filepath_scan_xy = create_filename(BASE_DIR, "scan_xy")
 
 class LidarReader: 
         def __init__(self):
@@ -64,8 +72,8 @@ class LidarReader:
                         y = r * np.sin(self.angleRad)
                         t = time.time()
                         
-                        save_scan(filepath_1, r, t)
-                        save_values_x_y(filepath_2, x, y, t)
+                        save_scan(filepath_scan_r, r, t)
+                        save_values_x_y(filepath_scan_xy, x, y, t)
 
                         gotScan = True
                         return r, x, y, t

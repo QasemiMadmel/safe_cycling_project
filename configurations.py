@@ -18,4 +18,5 @@ START_ANGLE = -45
 PLOT_X_LIMIT = 5
 PLOT_Y_LIMIT = 5
 
-
+# filename suffix
+suffix = ""
