@@ -8,7 +8,7 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 os.makedirs(measurement_dir, exist_ok=True)
 
 filepath_radial = os.path.join(measurement_dir, "radial_velocities.csv")
-filepath_xy = os.path.join(measurement_dir, "velocities_x_y.csv")
+filepath_xy = os.path.join(measurement_dir, "22042026_velocities_x_y.csv_perf_counter_static_environment_home.csv")
 
 def plot_radial_velocities():
     timestamps = []

@@ -32,29 +32,24 @@ def main():
         ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
         ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
 
-        r, x, y, timestamp = lidar.getScan()
+        r, x, y, t_log, timestamp = lidar.getScan()
         previousScan = r.copy()
         previousValuesX = x.copy()
         previousValuesY = y.copy()
         previousTimestamp = timestamp
-
+        
         while running:
-            r, x, y, timestamp = lidar.getScan()
+            r, x, y, t_log,timestamp = lidar.getScan()
 
             currentScan = r
             currentX = x
             currentY = y
-            dt = timestamp - previousTimestamp
+            dt = (timestamp - previousTimestamp) / 1e9
 
+            if dt <= 0:
+                continue
             # getVelocitiesRadial(previousScan, currentScan, dt)
-            getXandYVelocities(
-                previousValuesX,
-                currentX,
-                previousValuesY,
-                currentY,
-                dt,
-                timestamp
-            )
+            getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
 
             sc.set_offsets(np.column_stack((x, y)))
             plt.pause(0.001)

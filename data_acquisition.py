@@ -70,12 +70,13 @@ class LidarReader:
                         r = distances / 1000
                         x = r * np.cos(self.angleRad)
                         y = r * np.sin(self.angleRad)
-                        t = time.time()
+                        t = time.perf_counter_ns()
+                        t_log = time.time()
                         
-                        save_scan(filepath_scan_r, r, t)
-                        save_values_x_y(filepath_scan_xy, x, y, t)
+                        save_scan(filepath_scan_r, r, t_log)
+                        save_values_x_y(filepath_scan_xy, x, y, t_log)
 
                         gotScan = True
-                        return r, x, y, t
+                        return r, x, y, t_log, t
 
 

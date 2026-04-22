@@ -20,8 +20,7 @@ def playback_lidar():
     plt.ion()
 
     data = []
-
-    # xy.csv einlesen: (timestamp, x, y)
+    
     with open(filepath_xy, "r") as f:
         reader = csv.reader(f)
         for row in reader:
@@ -33,7 +32,6 @@ def playback_lidar():
         print("Keine Daten gefunden")
         return
 
-    # Alle Timestamps sammeln (Frames)
     timestamps = [t for t, _, _ in data]
     unique_timestamps = list(dict.fromkeys(timestamps))
 
@@ -46,7 +44,6 @@ def playback_lidar():
         x_vals = []
         y_vals = []
 
-        # Alle Punkte mit gleichem Timestamp sammeln
         for t, x, y in data:
             if abs(t - ts) < 0.0001:
                 x_vals.append(x)
