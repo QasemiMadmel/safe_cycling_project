@@ -14,7 +14,6 @@ GYRO_ZOUT_H = 0x47
 
 bus = smbus.SMBus(1)
 
-# Sensor aufwecken
 bus.write_byte_data(MPU_ADDR, PWR_MGMT_1, 0)
 
 def read_word_2c(reg):

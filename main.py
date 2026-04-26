@@ -1,11 +1,13 @@
+# main.py
+
 import signal
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
-from get_velocities import getVelocitiesRadial
 from get_velocities import getXandYVelocities
+from plot_velocity import classify_velocity_direction
 
 running = True
 
@@ -24,22 +26,27 @@ def main():
 
     try:
         lidar = LidarReader()
-
-        plt.ion()
-        fig, ax = plt.subplots()
-        sc = ax.scatter([], [], s=2)
-        ax.set_aspect('equal')
-        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
-        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
-
         r, x, y, t_log, timestamp = lidar.getScan()
+        
         previousScan = r.copy()
         previousValuesX = x.copy()
         previousValuesY = y.copy()
         previousTimestamp = timestamp
         
+        plt.ion()
+        fig, ax = plt.subplots()
+        colors = np.full(len(x), "blue", dtype=object)
+        colors[lidar.right] = "green"
+        colors[lidar.front] = "orange"
+        colors[lidar.left] = "red"
+        sc = ax.scatter(x, y, s=2, c=colors)
+        ax.set_aspect('equal')
+        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
+        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
+        sc.set_color(colors)
+
         while running:
-            r, x, y, t_log,timestamp = lidar.getScan()
+            r, x, y, t_log, timestamp = lidar.getScan()
 
             currentScan = r
             currentX = x
@@ -48,10 +55,17 @@ def main():
 
             if dt <= 0:
                 continue
-            # getVelocitiesRadial(previousScan, currentScan, dt)
-            getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
 
+            vx, vy, theta = getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+            colors = classify_velocity_direction(theta, lidar.right, lidar.front, lidar.left)
+            
+            #colors = np.full(len(x), "blue", dtype=object)
+            #colors[lidar.right] = "green"
+            #colors[lidar.front] = "orange"
+            #colors[lidar.left] = "magenta"
+            
             sc.set_offsets(np.column_stack((x, y)))
+            sc.set_color(colors)
             plt.pause(0.001)
 
             previousScan = currentScan.copy()

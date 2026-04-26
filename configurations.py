@@ -20,3 +20,18 @@ PLOT_Y_LIMIT = 5
 
 # filename suffix
 suffix = ""
+
+# start and stop indidies to reduce the FoV
+valid_start = 195
+valid_stop = 616
+valid_length = valid_stop - valid_start
+
+# thresholds to distiguish direction of velocity
+RIGHT_APPROACH_MIN = 270
+RIGHT_APPROACH_MAX = 320
+
+FRONT_APPROACH_MIN = 220
+FRONT_APPROACH_MAX = 320
+
+LEFT_APPROACH_MIN = 300
+LEFT_APPROACH_MAX = 330

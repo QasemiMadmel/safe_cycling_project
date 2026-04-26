@@ -1,56 +1,22 @@
-import matplotlib.pyplot as plt
-import csv
-import os 
+# plot_velocity
 
+import numpy as np
+import configurations as config
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-measurement_dir = os.path.join(BASE_DIR, "measurements")
-os.makedirs(measurement_dir, exist_ok=True)
-
-filepath_radial = os.path.join(measurement_dir, "radial_velocities.csv")
-filepath_xy = os.path.join(measurement_dir, "22042026_velocities_x_y.csv_perf_counter_static_environment_home.csv")
-
-def plot_radial_velocities():
-    timestamps = []
-    values = []
-
-    with open(filepath_radial, "r") as f:
-        reader = csv.reader(f)
-
-        for row in reader:
-            timestamps.append(float(row[0]))
-            values.append(float(row[1]))
-
-    plt.figure()
-    plt.plot(values)
-    plt.title("Radial Velocity")
-    plt.xlabel("Sample")
-    plt.ylabel("Velocity")
-    plt.show()
-
-
-def plot_x_y_velocities():
-    timestamps = []
-    values_x = []
-    values_y = []
-
-    with open(filepath_xy, "r") as f:
-        reader = csv.reader(f)
-
-        for row in reader:
-            timestamps.append(float(row[0]))
-            values_x.append(float(row[1]))
-            values_y.append(float(row[2]))
-
-    plt.figure()
-    plt.plot(values_x, label="Velocity X")
-    plt.plot(values_y, label="Velocity Y")
-    plt.title("Velocity X and Y")
-    plt.xlabel("Sample")
-    plt.ylabel("Velocity")
-    plt.legend()
-    plt.show()
+def classify_velocity_direction(theta, right_mask, front_mask, left_mask):
     
-    
-plot_x_y_velocities()    
-# plot_radial_velocities()
+    colors = np.full(len(theta), "blue", dtype=object)
+
+    colors[right_mask] = "green"
+    colors[front_mask] = "orange"
+    colors[left_mask]  = "magenta"
+
+    approach_right = right_mask & (theta >= config.RIGHT_APPROACH_MIN) & (theta <= config.RIGHT_APPROACH_MAX)
+    approach_front = front_mask & (theta >= config.FRONT_APPROACH_MIN) & (theta <= config.FRONT_APPROACH_MAX)
+    approach_left  = left_mask  & (theta >= config.LEFT_APPROACH_MIN) & (theta <= config.LEFT_APPROACH_MAX)
+
+    colors[approach_right] = "red"
+    colors[approach_front] = "red"
+    colors[approach_left]  = "red"
+
+    return colors

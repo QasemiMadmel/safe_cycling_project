@@ -1,18 +1,17 @@
 # data_acquisition.py
 
+import os
 import time
 import socket
 import numpy as np 
 import configurations as config
 from save_measurement import save_scan
 from save_measurement import save_values_x_y
-import os
 from filename_handler import create_filename, get_common_suffix
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config.suffix = get_common_suffix()
-
 filepath_scan_r = create_filename(BASE_DIR, "scan", config.suffix)
 filepath_scan_xy = create_filename(BASE_DIR, "scan_xy", config.suffix)
 
@@ -22,16 +21,21 @@ filepath_scan_xy = create_filename(BASE_DIR, "scan_xy", config.suffix)
 class LidarReader: 
         def __init__(self):
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                print((config.HOST, config.PORT))
+                
                 self.sock.connect((config.HOST, config.PORT))
 
                 self.sock.send(b"\x02sEN LMDscandata 1\x03") 
 
                 self.buffer = "" 
 
-                self.angleDeg = config.START_ANGLE + np.arange(config.DISTANCE_POINTS_COUNT) * config.STEP_ANGLE
-                self.angleRad = np.deg2rad(self.angleDeg) 
-        
+                self.angleDeg_full = config.START_ANGLE + np.arange(config.DISTANCE_POINTS_COUNT) * config.STEP_ANGLE
+                self.angleDeg = self.angleDeg_full[config.valid_start:config.valid_stop]
+                self.angleRad = np.deg2rad(self.angleDeg)
+                 
+                self.right = (self.angleDeg >= 20)&(self.angleDeg < 60)
+                self.front = (self.angleDeg >= 60)&(self.angleDeg < 120)
+                self.left = (self.angleDeg >= 120)&(self.angleDeg <=160)
+
         def getScan(self): 
                 gotScan = False
                 while not gotScan:
@@ -55,8 +59,10 @@ class LidarReader:
                         
                         i = tokens.index("DIST1")
                         
-                        distanceRawValues = tokens[i+6: i+6+config.DISTANCE_POINTS_COUNT]
-                        if len(distanceRawValues) != config.DISTANCE_POINTS_COUNT:
+                        #distanceRawValues = tokens[i+6: i+6+config.DISTANCE_POINTS_COUNT]
+                        distanceRawValues = tokens[i+6+config.valid_start: i+6+config.valid_stop]
+                        
+                        if len(distanceRawValues) != config.valid_length:
                             print("incomplete scan")
                             continue
                         

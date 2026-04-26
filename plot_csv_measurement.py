@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
@@ -12,8 +13,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 measurement_dir = os.path.join(BASE_DIR, "measurements")
 os.makedirs(measurement_dir, exist_ok=True)
 
-filepath_r = os.path.join(measurement_dir, "scan.csv")
-filepath_xy = os.path.join(measurement_dir, "scan_xy.csv")
+filepath_xy = os.path.join(measurement_dir, "26042026_scan_xy_test.csv")
 
 def playback_lidar():
 
@@ -73,36 +73,6 @@ def playback_lidar():
 
     print("Playback done")
 
-
-def plot_5_scans_r(filename, start_scan, points_per_scan=811):
-
-    values = []
-
-    with open(filename, "r") as f:
-        reader = csv.reader(f)
-
-        for row in reader:
-            values.append(float(row[2]))
-
-    start_index = start_scan * points_per_scan
-
-    plt.figure()
-
-    for i in range(5):
-        scan_start = start_index + i * points_per_scan
-        scan_end = scan_start + points_per_scan
-
-        scan_values = values[scan_start:scan_end]
-
-        plt.plot(scan_values, label=f"Scan {start_scan + i}")
-
-    plt.title("5 Consecutive Scans")
-    plt.xlabel("Point Index")
-    plt.ylabel("Distance (r)")
-    plt.legend()
-    plt.show()
-
-
 def plot_5_scans_xy(filename, start_scan, points_per_scan=811):
 
     data = []
@@ -157,5 +127,4 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=811):
     plt.show()
 
 playback_lidar()
-#plot_5_scans_r(filepath_r, 100)
 #plot_5_scans_xy(filepath_xy, 50)

@@ -3,36 +3,28 @@
 import configurations as config
 import numpy as np
 import os
-from save_measurement import save_velocities_radial
-from save_measurement import save_values_x_y
+from save_measurement import save_vx_vy_theta
 from filename_handler import create_filename, get_common_suffix
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-filepath_radial = create_filename(BASE_DIR, "radial_velocities.csv", config.suffix)
-filepath_xy = create_filename(BASE_DIR, "velocities_x_y.csv", config.suffix)
-
-def getVelocitiesRadial(previous, current, timeInBetweenScans):
-    
-    velocity = []
-    if timeInBetweenScans == 0:
-        print("time between scans is zero, skipping")
-        return 
-    else:
-        velocity = (current - previous) / timeInBetweenScans
-        save_velocities_radial(filepath_radial, velocity)
-    
-    return 
+filepath_v_xy = create_filename(BASE_DIR, "velocities_x_y.csv", config.suffix)
     
 def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenScans, t):
 
     if timeInBetweenScans == 0:
         print("time between scans is zero, skipping")
-        return 
+        return None, None, None
     else:
         velocityX = (xCurrent - xPrevious) / timeInBetweenScans
         velocityY = (yCurrent - yPrevious) / timeInBetweenScans
+        theta = getTheta(velocityX, velocityY)
     
-    save_values_x_y(filepath_xy, velocityX, velocityY, t)
+    save_vx_vy_theta(filepath_v_xy, velocityX, velocityY, t, theta)
     
-    return 
+    return velocityX, velocityY, theta
+
+def getTheta(vx, vy):
+    theta = np.degrees(np.atan2(vy,vx))
+    theta_in_360 = (theta+360)%(360)
+    return theta_in_360
