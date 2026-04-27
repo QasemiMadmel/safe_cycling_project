@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
 from get_velocities import getXandYVelocities
-from plot_velocity import classify_velocity_direction
+from classify_velocity import classify_velocity_direction
 
 running = True
 

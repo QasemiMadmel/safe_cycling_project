@@ -8,7 +8,7 @@ from filename_handler import create_filename, get_common_suffix
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-filepath_v_xy = create_filename(BASE_DIR, "velocities_x_y.csv", config.suffix)
+filepath_v_xy = create_filename(BASE_DIR, "velocities_x_y", config.suffix)
     
 def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenScans, t):
 

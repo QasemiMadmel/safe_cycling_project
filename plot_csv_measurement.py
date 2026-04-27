@@ -8,71 +8,95 @@ import csv
 import time
 import configurations as config
 import os 
+from collections import defaultdict
+from classify_velocity import classify_velocity_direction_playback
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 measurement_dir = os.path.join(BASE_DIR, "measurements")
 os.makedirs(measurement_dir, exist_ok=True)
 
-filepath_xy = os.path.join(measurement_dir, "26042026_scan_xy_test.csv")
+filepath_xy = os.path.join(measurement_dir, "27042026_scan_xy_test_backward_forward_slalom.csv")
+filepath_vel = os.path.join(measurement_dir, "27042026_velocities_x_y_test_backward_forward_slalom.csv")
 
 def playback_lidar():
 
     plt.ion()
 
-    data = []
-    
+    xy_data = []
+    theta_data = []
+
     with open(filepath_xy, "r") as f:
         reader = csv.reader(f)
         for row in reader:
             if len(row) < 3:
                 continue
-            data.append((float(row[0]), float(row[1]), float(row[2])))
+            x = float(row[1])
+            y = float(row[2])
+            xy_data.append((x, y))
 
-    if len(data) == 0:
-        print("Keine Daten gefunden")
+
+    with open(filepath_vel, "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 4:
+                continue
+            theta = float(row[3])
+            theta_data.append(theta)
+
+
+    if len(xy_data) == 0 or len(theta_data) == 0:
+        print("no data was found")
         return
+    
+    points_per_scan = 421
+    xy_data = xy_data[points_per_scan:]
+    min_len = min(len(xy_data), len(theta_data))
 
-    timestamps = [t for t, _, _ in data]
-    unique_timestamps = list(dict.fromkeys(timestamps))
+    xy_data = xy_data[:min_len]
+    theta_data = theta_data[:min_len]
 
-    print("Number of frames:", len(unique_timestamps))
+
+    points_per_scan = 421 
+    num_frames = len(xy_data) // points_per_scan
+
+    print("Number of frames:", num_frames)
 
     fig, ax = plt.subplots()
 
-    for ts in unique_timestamps:
+    for i in range(num_frames):
 
-        x_vals = []
-        y_vals = []
+        start = i * points_per_scan
+        end = start + points_per_scan
 
-        for t, x, y in data:
-            if abs(t - ts) < 0.0001:
-                x_vals.append(x)
-                y_vals.append(y)
-
-        x = np.array(x_vals)
-        y = np.array(y_vals)
+        x = np.array([p[0] for p in xy_data[start:end]])
+        y = np.array([p[1] for p in xy_data[start:end]])
+        theta = np.array(theta_data[start:end])
 
         if len(x) == 0:
             continue
 
-        ax.clear()
-        ax.scatter(x, y, s=2)
+        colors = classify_velocity_direction_playback(theta)
 
+
+        ax.clear()
+        ax.scatter(x, y, s=2, c=colors)
         ax.scatter(0, 0, color="red", s=20)
 
-        ax.set_title("LiDAR Playback (XY)")
+        ax.set_title(f"LiDAR Playback (Frame {i})")
         ax.set_xlabel("x (m)")
         ax.set_ylabel("y (m)")
 
         ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
         ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
-
         ax.set_aspect("equal")
 
-        plt.pause(0.001)
+        plt.pause(0.03)  
 
     print("Playback done")
 
+    plt.ioff()
+    plt.show()
+    
 def plot_5_scans_xy(filename, start_scan, points_per_scan=811):
 
     data = []
@@ -88,7 +112,6 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=811):
         print("no data was found")
         return
 
-    # ? Daten nach Timestamp gruppieren
     scans = {}
     for t, x, y in data:
         if t not in scans:
