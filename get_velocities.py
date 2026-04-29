@@ -6,25 +6,32 @@ import os
 from save_measurement import save_vx_vy_theta
 from filename_handler import create_filename, get_common_suffix
 
+# filepath to store computed results in measurement directory 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 filepath_v_xy = create_filename(BASE_DIR, "velocities_x_y", config.suffix)
     
 def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenScans, t):
-
-    if timeInBetweenScans == 0:
-        print("time between scans is zero, skipping")
-        return None, None, None
-    else:
-        velocityX = (xCurrent - xPrevious) / timeInBetweenScans
-        velocityY = (yCurrent - yPrevious) / timeInBetweenScans
-        theta = getTheta(velocityX, velocityY)
     
+    # calculate x and y velocity between two scans     
+    velocityX = (xCurrent - xPrevious) / timeInBetweenScans
+    velocityY = (yCurrent - yPrevious) / timeInBetweenScans
+    
+    # calculate the angle of the velocity vector
+    theta = getTheta(velocityX, velocityY)
+    
+    # save all information in a csv file for later
     save_vx_vy_theta(filepath_v_xy, velocityX, velocityY, t, theta)
     
+    # return the results
     return velocityX, velocityY, theta
 
 def getTheta(vx, vy):
+    
+    # arctan(vy,vx) but takes the minus and quadrant into account 
     theta = np.degrees(np.atan2(vy,vx))
+    
+    # turn into range (0 - 360 degree) for a convinient interpretation
     theta_in_360 = (theta+360)%(360)
+    
+    # return the resulted angle in degree
     return theta_in_360
