@@ -58,7 +58,7 @@ def playback_lidar():
     points_per_scan = 421
     
     # the number of scans stored for velocities are usually below the number of scans actually captured 
-    # skip the first scan! 
+    # skip the first scan! (synchronizing data)
     xy_data = xy_data[points_per_scan:] 
     
     # get the length of the smaller array
@@ -130,7 +130,7 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=421):         # points
         print("no data was found")
         return
      
-    # store in directionary {s1: {[x1,y1], [x2, y2], [],... }, s2: {[], [], [],...}, s3: {[], [], [],...},..}
+    # store in dictionary {s1: {[x1,y1], [x2, y2], [],... }, s2: {[], [], [],...}, s3: {[], [], [],...},..}
     scans = {}
     for t, x, y in data:
         

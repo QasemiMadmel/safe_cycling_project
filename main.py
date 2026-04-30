@@ -32,19 +32,18 @@ def main():
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
 
-    # create a null object (safty)
+    # initialize variable (safety)
     lidar = None
 
     try:
         
-        # initialze lidar object
+        # initialize lidar object
         lidar = LidarReader()
         
         # get one scan
         r, x, y, t_log, timestamp = lidar.getScan()
         
         # make a copy of the values
-        previousScan = r.copy()
         previousValuesX = x.copy()
         previousValuesY = y.copy()
         previousTimestamp = timestamp
@@ -56,11 +55,11 @@ def main():
         colors[lidar.right] = "green"                                   # right side of the sensor should appear in green
         colors[lidar.front] = "orange"                                  # sensor front side is orange
         colors[lidar.left] = "magenta"                                  # left side is magenta
-        sc = ax.scatter(x, y, s=2, c=colors)                            # give scatter the x and y cordinates, point size 2 and the color array
+        sc = ax.scatter(x, y, s=2, c=colors)                            # give scatter the x and y coordinates, point size 2 and the color array
         ax.set_aspect('equal')                                          # both axes should remain equal
-        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          # set limits to both axes and set the "colors" array to visualize points in color
-        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
-        sc.set_color(colors)
+        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          # set axis limit
+        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          # set axis limit
+        sc.set_color(colors)                                            # set colors array for visualization of areas and velocity direction 
 
         # while running variable is true
         while running:
@@ -76,27 +75,26 @@ def main():
             # calculate the time between two consecutive scans 
             dt = (timestamp - previousTimestamp) / 1e9
             
-            # do not divide to zero
+            # do not divide by zero
             if dt <= 0:
                 continue
             
-            # calculate the velocity and its direction through the angle of the vector 
+            # calculate the velocity and its direction (via angle) 
             vx, vy, theta = getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
             # visualize the points that are directed to the sensor in red!  
             colors = classify_velocity_direction(theta, lidar.right, lidar.front, lidar.left)
             
-            # join x and y values in ([x1,y1], [x2,y2], [x3,y3]...) format and give them into the plot
+            # join x and y values into Nx2 array for plotting ([x1,y1], [x2,y2], [x3,y3]...) 
             sc.set_offsets(np.column_stack((x, y)))
             
             # set the colors
             sc.set_color(colors) 
             
-            # pasue to see the plot transformation (animation effect)
+            # pause to see the plot transformation (animation effect)
             plt.pause(0.001)
 
             # set the current scan as previous for next calculations 
-            previousScan = currentScan.copy()
             previousValuesX = currentX.copy()
             previousValuesY = currentY.copy()
             previousTimestamp = timestamp

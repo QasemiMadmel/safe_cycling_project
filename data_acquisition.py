@@ -40,52 +40,52 @@ class LidarReader:
                 # limiting the field of view for rapid processing and avoiding redundancies
                 self.angleDeg = self.angleDeg_full[config.valid_start:config.valid_stop]
                 
-                # radian into degrees
+                # degrees into radian
                 self.angleRad = np.deg2rad(self.angleDeg)
                  
-                # definig areas for convinient processing and visualization  
+                # defining areas for convenient processing and visualization  
                 self.right = (self.angleDeg >= 20)&(self.angleDeg < 60)
                 self.front = (self.angleDeg >= 60)&(self.angleDeg < 120)
                 self.left = (self.angleDeg >= 120)&(self.angleDeg <=160)
 
         def getScan(self): 
                 
-                # variable that controls the amount of iterrations
+                # variable that controls the amount of iterations
                 gotScan = False
                 
                 while not gotScan:
                     
-                    # take 4096 bytes
+                    # read up to 4096 bytes
                     data = self.sock.recv(4096)
                     
                     # decode the bytes into ascii 
                     text = data.decode("ascii", errors="ignore")
                     
-                    # add the the decoded version to the buffer
+                    # add the decoded version to the buffer
                     self.buffer += text
                     
                     # search for the end token in the buffer
                     while "\x03" in self.buffer:
                             
-                        # mark the the ending
+                        # mark the ending
                         end = self.buffer.index("\x03")
                         
-                        # start the telgram after the end token 
+                        # store all tokens till the end token 
                         telegram = self.buffer[:end+1]
                         
-                        # save the tokens in buffer after the last found end token 
+                        # save the remaining tokens
                         self.buffer = self.buffer[end+1:]
                         
-                        # put all tokens next to each other
+                        # remove space from the end and beginning 
                         telegram = telegram.strip()
                         
                         # remove the start and end command from the scan
                         telegram = telegram.replace("\x03","").replace("\x02","")
                         
-                        # spilit all tokens to distinguish between values
+                        # split all tokens to distinguish between values
                         tokens = telegram.split()
                         
-                        # search for keyword to get the distaces from the telegram (if not found: continue)
+                        # search for keyword to get the distances from the telegram (if not found: continue)
                         if "DIST1" not in tokens:
                             continue
                         
@@ -112,16 +112,16 @@ class LidarReader:
                         # convert list into array of float
                         distances = np.array(distances_list, dtype=np.float32) 
                         
-                        r = distances / 1000                            # millimeter to mater
+                        r = distances / 1000                            # millimeter to meter
                         x = r * np.cos(self.angleRad)                   # x coordinates
                         y = r * np.sin(self.angleRad)                   # y coordinates
-                        t = time.perf_counter_ns()                      # perfect counter for exact timing 
+                        t = time.perf_counter_ns()                      # high resolution counter  
                         t_log = time.time()                             # time (for logging only)
                         
                         save_scan(filepath_scan_r, r, t_log)            # save scan (time, angle, distance)
                         save_values_x_y(filepath_scan_xy, x, y, t_log)  # save scan (time, x, y)
 
-                        gotScan = True                                  # scan is compelete, to stop the iterations set the variable to true
+                        gotScan = True                                  # scan is complete, to stop the iterations set the variable to true
                         return r, x, y, t_log, t                        # return all data 
 
 

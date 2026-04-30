@@ -27,11 +27,11 @@ def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenSc
 
 def getTheta(vx, vy):
     
-    # arctan(vy,vx) but takes the minus and quadrant into account 
+    # arctan(vy,vx) to correctly handle signs and quadrant
     theta = np.degrees(np.atan2(vy,vx))
     
-    # turn into range (0 - 360 degree) for a convinient interpretation
+    # turn into range (0 - 360 degree) for a convenient interpretation
     theta_in_360 = (theta+360)%(360)
     
-    # return the resulted angle in degree
+    # return the resulting angle in degree
     return theta_in_360

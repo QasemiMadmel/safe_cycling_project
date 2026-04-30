@@ -11,8 +11,8 @@ def classify_velocity_direction(theta, right_mask, front_mask, left_mask):
     colors[front_mask] = "orange"
     colors[left_mask]  = "magenta"
 
-    # the approach angle values are arbitary and must be adapted later on. 
-    # These values suppose to mark points that are moving in direction of the sensor  
+    # the approach angle values are arbitrary and must be adapted later on. 
+    # These values suppose to mark points moving toward the sensor  
     approach_right = right_mask & (theta >= config.RIGHT_APPROACH_MIN) & (theta <= config.RIGHT_APPROACH_MAX)
     approach_front = front_mask & (theta >= config.FRONT_APPROACH_MIN) & (theta <= config.FRONT_APPROACH_MAX)
     approach_left  = left_mask  & (theta >= config.LEFT_APPROACH_MIN) & (theta <= config.LEFT_APPROACH_MAX)
@@ -27,7 +27,7 @@ def classify_velocity_direction(theta, right_mask, front_mask, left_mask):
 
 def classify_velocity_direction_playback(theta):
     
-    # make an array instead of using the list
+    # make theta a numpy array
     theta = np.array(theta)
     # capture the length of the array
     n = len(theta)
@@ -48,15 +48,15 @@ def classify_velocity_direction_playback(theta):
     colors[front_mask] = "orange"
     colors[left_mask]  = "magenta"
 
-    # arbitary values that mark the points that are directing towards sensor 
+    # arbitary values that mark the points moving toward the sensor 
     approach_right = right_mask & (theta >= config.RIGHT_APPROACH_MIN) & (theta <= config.RIGHT_APPROACH_MAX)
     approach_front = front_mask & (theta >= config.FRONT_APPROACH_MIN) & (theta <= config.FRONT_APPROACH_MAX)
     approach_left  = left_mask  & (theta >= config.LEFT_APPROACH_MIN) & (theta <= config.LEFT_APPROACH_MAX)
 
-    # visualize distance values pointing to sensor in red
+    # visualize points moving toward the sensor in red
     colors[approach_right] = "red"
     colors[approach_front] = "red"
     colors[approach_left]  = "red"
 
-    # return the resulted colors for visualization in plot
+    # return the resulting colors for visualization in plot
     return colors

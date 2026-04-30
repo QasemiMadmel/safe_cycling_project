@@ -1,7 +1,6 @@
 # save_measuremet.py
 
 import csv
-import time
 
 def save_values_x_y(filename, x, y, t):
     
@@ -11,7 +10,7 @@ def save_values_x_y(filename, x, y, t):
         # use csv writer
         writer = csv.writer(f)
         
-        # iterrate over two lists and write the values iin the file
+        # iterate over two lists and write the values iin the file
         for value_x, value_y in zip(x, y):
             writer.writerow([t, value_x, value_y])
 
