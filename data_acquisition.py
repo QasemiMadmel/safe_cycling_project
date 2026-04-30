@@ -115,7 +115,8 @@ class LidarReader:
                         r = distances / 1000                            # millimeter to meter
                         x = r * np.cos(self.angleRad)                   # x coordinates
                         y = r * np.sin(self.angleRad)                   # y coordinates
-                        t = time.perf_counter_ns()                      # high resolution counter  
+                        # t = time.perf_counter_ns()                     # high resolution counter  
+                        t = int(tokens[i-10],16)                        # time from sensor telegram
                         t_log = time.time()                             # time (for logging only)
                         
                         save_scan(filepath_scan_r, r, t_log)            # save scan (time, angle, distance)

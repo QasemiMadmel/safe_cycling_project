@@ -73,10 +73,16 @@ def main():
             currentY = y
             
             # calculate the time between two consecutive scans 
-            dt = (timestamp - previousTimestamp) / 1e9
+            dt = (timestamp - previousTimestamp) / 1e6
+            print(timestamp)
             
             # do not divide by zero
             if dt <= 0:
+                continue
+            
+            # after 71 min overflow in uint32! (sensor time) 
+            # handling the overflow for one scan 
+            if timestamp < previousTimestamp:
                 continue
             
             # calculate the velocity and its direction (via angle) 
