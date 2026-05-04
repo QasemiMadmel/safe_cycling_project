@@ -1,5 +1,6 @@
 # main.py
 
+import os
 import signal
 import sys
 import numpy as np
@@ -8,9 +9,15 @@ import configurations as config
 from data_acquisition import LidarReader
 from get_velocities import getXandYVelocities
 from classify_velocity import classify_velocity_direction
+from save_measurement import save_median
+from filename_handler import create_filename
 
 # global variable: to stop program with a shortcut
 running = True
+
+# filepath for median values
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+filepath_median = create_filename(BASE_DIR, "median", config.suffix)
 
 def stop_handler(signum, frame):
     
@@ -74,7 +81,6 @@ def main():
             
             # calculate the time between two consecutive scans 
             dt = (timestamp - previousTimestamp) / 1e6
-            print(timestamp)
             
             # do not divide by zero
             if dt <= 0:
@@ -86,8 +92,17 @@ def main():
                 continue
             
             # calculate the velocity and its direction (via angle) 
-            vx, vy, theta = getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+            vx, vy, v, theta = getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
+            # the median of the velocity for four different sections: right, right_top, left_top, left:
+            median_right = np.median(v[0:105])
+            median_right_top = np.median(v[105:205])
+            median_left_top = np.median(v[205:305])
+            median_left = np.median(v[305:])
+            
+            # save values in a file
+            save_median(filepath_median, median_right, median_right_top, median_left_top, median_left)
+
             # visualize the points that are directed to the sensor in red!  
             colors = classify_velocity_direction(theta, lidar.right, lidar.front, lidar.left)
             

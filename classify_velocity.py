@@ -39,24 +39,36 @@ def classify_velocity_direction_playback(theta):
     front_mask = np.zeros(n, dtype=bool)
     left_mask  = np.zeros(n, dtype=bool)
 
-    right_mask[:n//3] = True              # set the first 1/3rd of the array to true
-    front_mask[n//3:2*n//3] = True        # set the area from 1/3rd to 2/3rd of the array to true
-    left_mask[2*n//3:] = True             # set the last 1/3rd to true
+    #right_mask[:n//3] = True              # set the first 1/3rd of the array to true
+    #front_mask[n//3:2*n//3] = True        # set the area from 1/3rd to 2/3rd of the array to true
+    #left_mask[2*n//3:] = True             # set the last 1/3rd to true
 
     # paint the areas with different colors
-    colors[right_mask] = "green"
-    colors[front_mask] = "orange"
-    colors[left_mask]  = "magenta"
+    #colors[right_mask] = "green"
+    #colors[front_mask] = "orange"
+    #colors[left_mask]  = "magenta"
 
     # arbitary values that mark the points moving toward the sensor 
-    approach_right = right_mask & (theta >= config.RIGHT_APPROACH_MIN) & (theta <= config.RIGHT_APPROACH_MAX)
-    approach_front = front_mask & (theta >= config.FRONT_APPROACH_MIN) & (theta <= config.FRONT_APPROACH_MAX)
-    approach_left  = left_mask  & (theta >= config.LEFT_APPROACH_MIN) & (theta <= config.LEFT_APPROACH_MAX)
+    #approach_right = right_mask & (theta >= config.RIGHT_APPROACH_MIN) & (theta <= config.RIGHT_APPROACH_MAX)
+    #approach_front = front_mask & (theta >= config.FRONT_APPROACH_MIN) & (theta <= config.FRONT_APPROACH_MAX)
+    #approach_left  = left_mask  & (theta >= config.LEFT_APPROACH_MIN) & (theta <= config.LEFT_APPROACH_MAX)
 
+    zero_to_90 = (theta >= 0) & (theta < 90)
+    ninty_to_180 = (theta >= 90) & (theta < 180)
+    hunderedeighty_to_270 = (theta >= 180) & (theta < 270)
+    twohunderedseventy_to_360 = (theta >= 270) & (theta < 360)
+    
+
+    colors[zero_to_90] = "red"
+    colors[ninty_to_180] = "violet"
+    colors[hunderedeighty_to_270] = "green"
+    colors[twohunderedseventy_to_360]  = "yellow"
+    
+    
     # visualize points moving toward the sensor in red
-    colors[approach_right] = "red"
-    colors[approach_front] = "red"
-    colors[approach_left]  = "red"
+    #colors[approach_right] = "red"
+    #colors[approach_front] = "red"
+    #colors[approach_left]  = "red"
 
     # return the resulting colors for visualization in plot
     return colors

@@ -17,8 +17,12 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 os.makedirs(measurement_dir, exist_ok=True)
 
 # set filenames for plots (the file that contains xy coordinates as well as the one containing velocities and angles)
-filepath_xy = os.path.join(measurement_dir,"28042026_scan_xy_outdoor_riding_forward.csv")
-filepath_vel = os.path.join(measurement_dir,"28042026_velocities_x_y_outdoor_riding_forward.csv")
+# street_cars_overtake_from_left
+# overtaking_cars_
+# overtaking_cars
+# cars_overtake_static_sensor
+filepath_xy = os.path.join(measurement_dir,"02052026_scan_xy_cars_overtake_static_sensor.csv")
+filepath_vel = os.path.join(measurement_dir,"02052026_velocities_x_y_cars_overtake_static_sensor.csv")
 
 def playback_lidar():
 
@@ -97,7 +101,7 @@ def playback_lidar():
 
         # set parameters of the plot
         ax.clear()                                                      # clean up previous scan
-        ax.scatter(x, y, s=2, c=colors)                                 # x, y and point size
+        ax.scatter(x, y, s=20, c=colors)                                 # x, y and point size
         ax.scatter(0, 0, color="red", s=20)                             # plot the sensor itself in red 
         ax.set_title(f"LiDAR Playback (Frame {i})")                     # title
         ax.set_xlabel("x (m)")                                          # label x
@@ -182,4 +186,4 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=421):         # points
     plt.show()
 
 playback_lidar()
-plot_5_scans_xy(filepath_xy, 40)
+#plot_5_scans_xy(filepath_xy, 620)

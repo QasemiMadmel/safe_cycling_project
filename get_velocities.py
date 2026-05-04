@@ -19,11 +19,14 @@ def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenSc
     # calculate the angle of the velocity vector
     theta = getTheta(velocityX, velocityY)
     
-    # save all information in a csv file for later
-    save_vx_vy_theta(filepath_v_xy, velocityX, velocityY, t, theta)
+    # calculate absolute value of velocity vectors
+    velocity = np.sqrt(velocityX**2 + velocityY**2)
+    
+    # save all information in a csv ofile for later
+    save_vx_vy_theta(filepath_v_xy, velocityX, velocityY, velocity, t, theta)
     
     # return the results
-    return velocityX, velocityY, theta
+    return velocityX, velocityY, velocity, theta
 
 def getTheta(vx, vy):
     
