@@ -21,8 +21,8 @@ os.makedirs(measurement_dir, exist_ok=True)
 # overtaking_cars_
 # overtaking_cars
 # cars_overtake_static_sensor
-filepath_xy = os.path.join(measurement_dir,"02052026_scan_xy_cars_overtake_static_sensor.csv")
-filepath_vel = os.path.join(measurement_dir,"02052026_velocities_x_y_cars_overtake_static_sensor.csv")
+filepath_xy = os.path.join(measurement_dir,"02052026_scan_xy_overtaking_cars.csv")
+filepath_vel = os.path.join(measurement_dir,"02052026_velocities_x_y_overtaking_cars.csv")
 
 def playback_lidar():
 

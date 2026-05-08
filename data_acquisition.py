@@ -121,8 +121,28 @@ class LidarReader:
                         
                         save_scan(filepath_scan_r, r, t_log)            # save scan (time, angle, distance)
                         save_values_x_y(filepath_scan_xy, x, y, t_log)  # save scan (time, x, y)
-
+                        
+                        # use the same method to store the intensity values
+                        if "RSSI1" not in tokens: 
+                            continue
+                        
+                        j = tokens.index("RSSI1")
+                        
+                        intensityRawValues = tokens[j+6+config.valid_start: j+6+config.valid_stop]
+                        if len(intensityRawValues) != config.valid_length:
+                            print("incomplete scan")
+                            continue
+                                                
+                        rssi_list = []
+                        for val in intensityRawValues:
+                            # convert into integer to store    
+                            value_rssi = int(val, 16)
+                            # add to list
+                            rssi_list.append(value_rssi)
+                            
+                        rssi = np.array(rssi_list, dtype=np.float32)
+                        
                         gotScan = True                                  # scan is complete, to stop the iterations set the variable to true
-                        return r, x, y, t_log, t                        # return all data 
+                        return r, x, y, t_log, t, rssi                  # return all data 
 
 

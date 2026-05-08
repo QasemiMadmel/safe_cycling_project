@@ -10,6 +10,7 @@ from data_acquisition import LidarReader
 from get_velocities import getXandYVelocities
 from classify_velocity import classify_velocity_direction
 from save_measurement import save_median
+from save_measurement import save_rssi
 from filename_handler import create_filename
 
 # global variable: to stop program with a shortcut
@@ -18,6 +19,7 @@ running = True
 # filepath for median values
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 filepath_median = create_filename(BASE_DIR, "median", config.suffix)
+filepath_rssi = create_filename(BASE_DIR, "rssi", config.suffix)
 
 def stop_handler(signum, frame):
     
@@ -48,12 +50,14 @@ def main():
         lidar = LidarReader()
         
         # get one scan
-        r, x, y, t_log, timestamp = lidar.getScan()
+        r, x, y, t_log, timestamp, rssi = lidar.getScan()
         
         # make a copy of the values
         previousValuesX = x.copy()
         previousValuesY = y.copy()
         previousTimestamp = timestamp
+
+        save_rssi(filepath_rssi, rssi, t_log)                           # save the intensity values for the first scan
         
         # create a plot: 
         plt.ion()                                                       # interactive mode
@@ -72,12 +76,13 @@ def main():
         while running:
             
             # get the next scan 
-            r, x, y, t_log, timestamp = lidar.getScan()
+            r, x, y, t_log, timestamp, rssi = lidar.getScan()
             
             # store the results
             currentScan = r
             currentX = x
             currentY = y
+            intensity = rssi
             
             # calculate the time between two consecutive scans 
             dt = (timestamp - previousTimestamp) / 1e6
@@ -92,17 +97,23 @@ def main():
                 continue
             
             # calculate the velocity and its direction (via angle) 
-            vx, vy, v, theta = getXandYVelocities( previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+            vx, vy, v, theta = getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
             # the median of the velocity for four different sections: right, right_top, left_top, left:
-            median_right = np.median(v[0:105])
-            median_right_top = np.median(v[105:205])
-            median_left_top = np.median(v[205:305])
-            median_left = np.median(v[305:])
+            right = v[0:105]
+            right_top = v[105:205]
+            left_top = v[205:305]
+            left = v[305:]
+            
+            median_right = np.median(right[(right>0.1)&(right<30)])
+            median_right_top = np.median(right_top[(right_top>0.1)&(right_top<30)])
+            median_left_top = np.median(left_top[(left_top>0.1)&(left_top<30)])
+            median_left = np.median(left[(left>0.1)&(left<30)])
             
             # save values in a file
-            save_median(filepath_median, median_right, median_right_top, median_left_top, median_left)
-
+            save_median(filepath_median, median_right, median_right_top, median_left_top, median_left)  # save median values
+            save_rssi(filepath_rssi, rssi, t_log)                                                       # save all rssi values 
+  
             # visualize the points that are directed to the sensor in red!  
             colors = classify_velocity_direction(theta, lidar.right, lidar.front, lidar.left)
             

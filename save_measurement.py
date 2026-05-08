@@ -41,10 +41,23 @@ def save_scan(filename, distances, t):
 import csv
 
 def save_median(filename, r, rt, lt, l):
+    
+    # open file in append mode
     with open(filename, "a", newline="") as f:
+        
+        # use csv writer
         writer = csv.writer(f)
 
         values = [r, rt, lt, l]
 
         for i, value in enumerate(values, start=1):
             writer.writerow([i, value])
+
+def save_rssi(filepath, rssi, t_log):
+    
+    # open file in append mode
+    with open(filepath, "a") as f:
+
+        for val in rssi:
+
+            f.write(f"{t_log},{val}\n") # time, intensity
