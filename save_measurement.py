@@ -38,21 +38,17 @@ def save_scan(filename, distances, t):
         for i, d in enumerate(distances):
             writer.writerow([t, i, d])
 
-import csv
 
-def save_median(filename, r, rt, lt, l):
+def save_median_and_ego_velocity_estimation(filename, t, median_right, ego_velocity):
     
     # open file in append mode
     with open(filename, "a", newline="") as f:
         
         # use csv writer
         writer = csv.writer(f)
-
-        values = [r, rt, lt, l]
-
-        for i, value in enumerate(values, start=1):
-            writer.writerow([i, value])
-
+        writer.writerow([t, median_right, ego_velocity])
+         
+            
 def save_rssi(filepath, rssi, t_log):
     
     # open file in append mode

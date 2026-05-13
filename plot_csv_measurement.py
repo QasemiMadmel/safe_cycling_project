@@ -5,11 +5,9 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
-import time
 import configurations as config
+from detectMovingObject import detectDanger
 import os 
-from collections import defaultdict
-from classify_velocity import classify_velocity_direction_playback
 
 # define paths 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,12 +15,12 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 os.makedirs(measurement_dir, exist_ok=True)
 
 # set filenames for plots (the file that contains xy coordinates as well as the one containing velocities and angles)
-# street_cars_overtake_from_left
-# overtaking_cars_
-# overtaking_cars
-# cars_overtake_static_sensor
-filepath_xy = os.path.join(measurement_dir,"09052026_scan_xy_testcycler.csv")
-filepath_vel = os.path.join(measurement_dir,"09052026_velocities_x_y_testcycler.csv")
+
+filepath_xy = os.path.join(measurement_dir,"13052026_scan_xy_test_detection .csv")
+filepath_vel = os.path.join(measurement_dir,"13052026_velocities_x_y_test_detection .csv")
+filepath_scan_r = os.path.join(measurement_dir,"13052026_scan_test_detection .csv")
+filepath_rssi = os.path.join(measurement_dir,"13052026_rssi_test_detection .csv")
+filepath_median_and_ego_velocity = os.path.join(measurement_dir,"13052026_median_and_ego_velocity_test_detection .csv")
 
 def playback_lidar():
 
@@ -31,8 +29,11 @@ def playback_lidar():
     
     # arrays to store the data 
     xy_data = []
-    theta_data = []
-
+    v_data = []
+    r_data = []
+    rssi_data = []
+    ego_velocity_data = []
+    
     # open both files in read mode and store data in both arrays:
     
     with open(filepath_xy, "r") as f:
@@ -44,17 +45,40 @@ def playback_lidar():
             y = float(row[2])
             xy_data.append((x, y))
 
-
     with open(filepath_vel, "r") as f:
         reader = csv.reader(f)
         for row in reader:
             if len(row) < 4:
                 continue
-            theta = float(row[3])
-            theta_data.append(theta)
+            v = float(row[3])
+            v_data.append(v)
+    
+    with open(filepath_scan_r, "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 3:
+                continue
+            r = float(row[2])
+            r_data.append(r)
+        
+    with open(filepath_rssi, "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            rssi = float(row[1])
+            rssi_data.append(rssi)
+    
+    with open(filepath_median_and_ego_velocity, "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            ego_velocity = float(row[1])
+            ego_velocity_data.append(ego_velocity)
     
     # check if the data arrays are empty 
-    if len(xy_data) == 0 or len(theta_data) == 0:
+    if len(xy_data) == 0 or len(v_data) == 0 or len(rssi_data) == 0 or len(ego_velocity_data) == 0:
         print("no data was found")
         return
     
@@ -66,15 +90,19 @@ def playback_lidar():
     xy_data = xy_data[points_per_scan:] 
     
     # get the length of the smaller array
-    min_len = min(len(xy_data), len(theta_data))
-
-    # cut to the minimum length
-    xy_data = xy_data[:min_len]
-    theta_data = theta_data[:min_len]
-
+    min_len = min(len(xy_data), len(v_data))
+    
     # calculate the number of frames 
     num_frames = len(xy_data) // points_per_scan
     print("Number of frames:", num_frames)
+
+    # cut to the minimum length
+    xy_data = xy_data[:min_len]
+    v_data = v_data[:min_len]
+    ego_velocity_data = ego_velocity_data[:min_len]
+    r_data = r_data[:min_len]
+    rssi_data = rssi_data[:min_len]
+    ego_velocity_data = ego_velocity_data[:num_frames]
 
     # create figure and axes
     fig, ax = plt.subplots()
@@ -89,17 +117,24 @@ def playback_lidar():
         # extract x,y arrays from the current scan
         x = np.array([p[0] for p in xy_data[start:end]])
         y = np.array([p[1] for p in xy_data[start:end]])
-        theta = np.array(theta_data[start:end])
-
+        v = np.array(v_data[start:end])
+        r = np.array(r_data[start:end])
+        rssi = np.array(rssi_data[start:end])
+        egoVel = ego_velocity_data[i]
+        
         # check if data is empty
-        if len(x) == 0:
+        if len(x) == 0 or len(v) == 0 or len(r) == 0 or len(rssi) == 0:
             continue
-
-        # function returns a color array that visualize right, front and left areas in dfferent 
-        # colors and paints the point that are directed toward sensor in red 
-        colors = classify_velocity_direction_playback(theta)
+            
+        v_right = v[0:212]
+        r_right = r[0:212]
+        rssi_right = rssi[0:212]
+        
+        overtakingCar = detectDanger(v_right, r_right, rssi_right, egoVel)
 
         # set parameters of the plot
+        colors = np.full(len(x), "blue", dtype=object)
+        colors[overtakingCar] = "red" 
         ax.clear()                                                      # clean up previous scan
         ax.scatter(x, y, s=20, c=colors)                                 # x, y and point size
         ax.scatter(0, 0, color="red", s=20)                             # plot the sensor itself in red 
@@ -115,40 +150,6 @@ def playback_lidar():
 
     plt.ioff()                                                          # end of interactive mode
     plt.show()
-    
-def plot_5_scans_xy(filename, start_scan, points_per_scan=421):         # points per scan can be set to 811 (full fov) if all scan points were stored in data acquisition!
-
-    # array for data storage
-    data = []
-
-    # open file to get the coordinates
-    with open(filename, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 3:
-                continue
-            data.append((float(row[0]), float(row[1]), float(row[2])))
-     
-    # check if the data is empty
-    if len(data) == 0:
-        print("no data was found")
-        return
-     
-    # store in dictionary {s1: {[x1,y1], [x2, y2], [],... }, s2: {[], [], [],...}, s3: {[], [], [],...},..}
-    scans = {}
-    for t, x, y in data:
         
-        if t not in scans:
-            scans[t] = {"x": [], "y": []}
-        
-        scans[t]["x"].append(x)
-        scans[t]["y"].append(y)
-
-    # each scan has only one timestamp value which will be employed as key
-    unique_timestamps = list(scans.keys())
-    
-    # create a figure
-    plt.figure()
-    
 playback_lidar()
 

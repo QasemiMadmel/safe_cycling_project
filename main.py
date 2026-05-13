@@ -8,16 +8,17 @@ import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
 from get_velocities import getXandYVelocities
-from save_measurement import save_median
+from save_measurement import save_median_and_ego_velocity_estimation
 from save_measurement import save_rssi
 from filename_handler import create_filename
+from detectMovingObject import detectDanger
 
 # global variable: to stop program with a shortcut
 running = True
 
 # filepath for median values
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-filepath_median = create_filename(BASE_DIR, "median", config.suffix)
+filepath_median = create_filename(BASE_DIR, "median_and_ego_velocity", config.suffix)
 filepath_rssi = create_filename(BASE_DIR, "rssi", config.suffix)
 
 def stop_handler(signum, frame):
@@ -55,6 +56,9 @@ def main():
         previousValuesX = x.copy()
         previousValuesY = y.copy()
         previousTimestamp = timestamp
+        previousMedian = 0                                              # set the median for first scan to zero 
+        alpha = 0.1
+        beta = 1 - alpha 
 
         save_rssi(filepath_rssi, rssi, t_log)                           # save the intensity values for the first scan
         
@@ -62,9 +66,6 @@ def main():
         plt.ion()                                                       # interactive mode
         fig, ax = plt.subplots()                                        # create a figure and the axes
         colors = np.full(len(x), "blue", dtype=object)                  # create an array of colors for the points (default color is blue)
-        colors[lidar.right] = "green"                                   # right side of the sensor should appear in green
-        colors[lidar.front] = "orange"                                  # sensor front side is orange
-        colors[lidar.left] = "magenta"                                  # left side is magenta
         sc = ax.scatter(x, y, s=2, c=colors)                            # give scatter the x and y coordinates, point size 2 and the color array
         ax.set_aspect('equal')                                          # both axes should remain equal
         ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          # set axis limit
@@ -78,10 +79,8 @@ def main():
             r, x, y, t_log, timestamp, rssi = lidar.getScan()
             
             # store the results
-            currentScan = r
             currentX = x
             currentY = y
-            intensity = rssi
             
             # calculate the time between two consecutive scans 
             dt = (timestamp - previousTimestamp) / 1e6
@@ -98,20 +97,32 @@ def main():
             # calculate the velocity and its direction (via angle) 
             vx, vy, v = getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
-            # the median of the velocity for four different sections: right, right_top, left_top, left:
-            right = v[0:105]
-            right_top = v[105:205]
-            left_top = v[205:305]
-            left = v[305:]
+            # the median of the velocity for right measurment area:
+            v_right = v[0:212]
+            r_right = r[0:212]
+            rssi_right = rssi[0:212]
+   
+            # calculate median of the velocity for the right side of the sensor 
+            current_median_right_area = np.nanmedian(v_right)
             
-            median_right = np.median(right[(right>0.1)&(right<30)])
-            median_right_top = np.median(right_top[(right_top>0.1)&(right_top<30)])
-            median_left_top = np.median(left_top[(left_top>0.1)&(left_top<30)])
-            median_left = np.median(left[(left>0.1)&(left<30)])
+            if np.isnan(current_median_right_area):
+               current_median_right_area = previousMedian
+               
+            # alpha filter for an estimation of ego motion velocity
+            ego_velocity_estimation = alpha * current_median_right_area + beta * previousMedian  # threshold for detection of moving object
+            
+            # detect potential danger
+            overtakingObject = detectDanger(v_right, r_right, rssi_right, ego_velocity_estimation)
+            
+            # reset all colors to blue
+            colors = np.full(len(x), "blue", dtype=object)
+            
+            # paint danger in red
+            colors[overtakingObject] = "red"
             
             # save values in a file
-            save_median(filepath_median, median_right, median_right_top, median_left_top, median_left)  # save median values
-            save_rssi(filepath_rssi, rssi, t_log)                                                       # save all rssi values 
+            save_median_and_ego_velocity_estimation(filepath_median, timestamp, current_median_right_area, ego_velocity_estimation)             # save median values
+            save_rssi(filepath_rssi, rssi, t_log)                       # save all rssi values 
             
             # join x and y values into Nx2 array for plotting ([x1,y1], [x2,y2], [x3,y3]...) 
             sc.set_offsets(np.column_stack((x, y)))
@@ -126,6 +137,7 @@ def main():
             previousValuesX = currentX.copy()
             previousValuesY = currentY.copy()
             previousTimestamp = timestamp
+            previousMedian = ego_velocity_estimation
 
     # handle keyboardinterrupt to stop the program 
     except KeyboardInterrupt:

@@ -19,6 +19,7 @@ def getXandYVelocities(xPrevious, xCurrent, yPrevious, yCurrent, timeInBetweenSc
     # calculate absolute value of velocity vectors
     velocity = np.sqrt(velocityX**2 + velocityY**2)
     
+    # keep only proper velocioty values
     velocity[(velocity > 20) | (velocity < 0.1)] = np.nan
         
     # save all information in a csv ofile for later
