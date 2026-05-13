@@ -150,40 +150,5 @@ def plot_5_scans_xy(filename, start_scan, points_per_scan=421):         # points
     # create a figure
     plt.figure()
     
-    # plot 5 consecutive scans 
-    for i in range(5):
-        
-        # index of the first scan from function parameter
-        idx = start_scan + i
-
-        # check if it exceeds the number of scans
-        if idx >= len(unique_timestamps):
-            print("not enough scans available")
-            break
-        
-        # get the timestamp of the first scan for the plot
-        ts = unique_timestamps[idx]
-        
-        # use the timestamp (key) to access the coordinates
-        scan = scans[ts]
-        x_arr = np.array(scan["x"])
-        y_arr = np.array(scan["y"])
-        
-        # check if scan is empty
-        if len(x_arr) == 0:
-            print("Scan incomplete")
-            continue
-        
-        # plot the scan (in each iteration the new scans will be added to this plot)
-        plt.scatter(x_arr, y_arr, s=5, label=f"Scan {idx}")
-
-    # set the title and labels for the plot
-    plt.title("5 Scans in XY Space")
-    plt.xlabel("x (m)")
-    plt.ylabel("y (m)")
-    plt.axis("equal")
-    plt.legend()
-    plt.show()
-
 playback_lidar()
-#plot_5_scans_xy(filepath_xy, 620)
+

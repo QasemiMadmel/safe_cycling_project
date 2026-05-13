@@ -15,8 +15,8 @@ STEP_ANGLE = 0.3333
 START_ANGLE = -45
 
 # limits for the plot (must be adapted based on scenario!)
-PLOT_X_LIMIT = 20
-PLOT_Y_LIMIT = 20
+PLOT_X_LIMIT = 5
+PLOT_Y_LIMIT = 5
 
 # filename suffix
 suffix = ""
@@ -26,12 +26,4 @@ valid_start = 195
 valid_stop = 616
 valid_length = valid_stop - valid_start
 
-# thresholds to distiguish direction of velocity (must be adapted through the process)
-RIGHT_APPROACH_MIN = 270
-RIGHT_APPROACH_MAX = 320
 
-FRONT_APPROACH_MIN = 220
-FRONT_APPROACH_MAX = 320
-
-LEFT_APPROACH_MIN = 300
-LEFT_APPROACH_MAX = 330

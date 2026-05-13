@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
 from get_velocities import getXandYVelocities
-from classify_velocity import classify_velocity_direction
 from save_measurement import save_median
 from save_measurement import save_rssi
 from filename_handler import create_filename
@@ -97,7 +96,7 @@ def main():
                 continue
             
             # calculate the velocity and its direction (via angle) 
-            vx, vy, v, theta = getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+            vx, vy, v = getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
             # the median of the velocity for four different sections: right, right_top, left_top, left:
             right = v[0:105]
@@ -113,9 +112,6 @@ def main():
             # save values in a file
             save_median(filepath_median, median_right, median_right_top, median_left_top, median_left)  # save median values
             save_rssi(filepath_rssi, rssi, t_log)                                                       # save all rssi values 
-  
-            # visualize the points that are directed to the sensor in red!  
-            colors = classify_velocity_direction(theta, lidar.right, lidar.front, lidar.left)
             
             # join x and y values into Nx2 array for plotting ([x1,y1], [x2,y2], [x3,y3]...) 
             sc.set_offsets(np.column_stack((x, y)))

@@ -14,7 +14,7 @@ def save_values_x_y(filename, x, y, t):
         for value_x, value_y in zip(x, y):
             writer.writerow([t, value_x, value_y])
 
-def save_vx_vy_theta(filename, vx, vy, v, t, theta):
+def save_vx_vy(filename, vx, vy, v, t):
     
     # open file in append mode
     with open(filename, "a", newline="") as f:
@@ -23,8 +23,8 @@ def save_vx_vy_theta(filename, vx, vy, v, t, theta):
         writer = csv.writer(f)
         
         # iterate over four lists: vx, vy, v and theta and write into file 
-        for value_vx, value_vy, value_v, angle in zip(vx, vy, v, theta):
-            writer.writerow([t, value_vx, value_vy, value_v, angle])
+        for value_vx, value_vy, value_v in zip(vx, vy, v):
+            writer.writerow([t, value_vx, value_vy, value_v])
             
 def save_scan(filename, distances, t):
 
