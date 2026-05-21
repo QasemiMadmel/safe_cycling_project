@@ -7,12 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
-from ultrasoundsensor import UltrasoundReader
 from get_velocities import getXandYVelocities
 from save_measurement import save_median_and_ego_velocity_estimation
 from save_measurement import save_rssi
 from filename_handler import create_filename
 from detectMovingObject import detectDanger
+from ultrasoundsensor import UltrasoundReader
+from ultrasound_thread import UltrasoundThread
 
 # global variable: to stop program with a shortcut
 running = True
@@ -21,6 +22,7 @@ running = True
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 filepath_median = create_filename(BASE_DIR, "median_and_ego_velocity", config.suffix)
 filepath_rssi = create_filename(BASE_DIR, "rssi", config.suffix)
+filepath_ultrasound = create_filename(BASE_DIR, "ultrasound", config.suffix)
 
 def stop_handler(signum, frame):
     
@@ -46,17 +48,18 @@ def main():
     lidar = None
 
     try:
+        # thread 1 starts acquiring data from the ultrasound sensor 
+        us_thread = UltrasoundThread(filepath_ultrasound)
+        us_thread.start()
         
         # initialize lidar object
         lidar = LidarReader()
-        ultrasound = UltrasoundReader()
         
         # get one scan
         r, x, y, t_log, timestamp, rssi = lidar.getScan()
         
-        # get the distance from ultrasound sensor 
-        us_distace = ultrasound.getDistance() 
-        
+        us_distance = us_thread.latest_distance
+                
         # make a copy of the values
         previousValuesX = x.copy()
         previousValuesY = y.copy()
@@ -83,7 +86,7 @@ def main():
             # get the next scan 
             r, x, y, t_log, timestamp, rssi = lidar.getScan()
             
-            us_distance = ultrasound.getDistance()
+            us_distance = us_thread.latest_distance
             # store the results
             currentX = x
             currentY = y
@@ -158,6 +161,8 @@ def main():
 
     finally:
         print("Cleaning up and exiting...")
+        us_thread.stop()
+        us_thread.join(timeout=1)
         plt.close('all')
         sys.exit(0)
 
