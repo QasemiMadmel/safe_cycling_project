@@ -121,9 +121,8 @@ def main():
             overtakingObject = detectDanger(v_right, r_right, rssi_right, ego_velocity_estimation)
             
             # print for debugging
-            print(
-            f"ego={ego_velocity_estimation:.2f} m/s | "
-            f"us={us_distance:.2f} m")
+            if us_distance is not None:
+                print(f"US: {us_distance:.2f} m")
             
             # reset all colors to blue
             colors = np.full(len(x), "blue", dtype=object)

@@ -42,10 +42,15 @@ class UltrasoundReader:
             stop_time = time.time()
 
         if stop_time >= max_time:
-            return None
+            return self.last_distance
 
         dt = stop_time - start_time
 
         distance_mm = dt * config.US_SOUND_SPEED
 
-        return distance_mm / 1000.0
+        distance = distance_mm / 1000.0
+        
+        self.last_distance = distance
+        self.last_measurement = now
+        
+        return distance
