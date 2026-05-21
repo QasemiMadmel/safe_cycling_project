@@ -14,6 +14,7 @@ from save_measurement import save_median_and_ego_velocity_estimation
 from save_measurement import save_rssi
 from filename_handler import create_filename
 from detectMovingObject import detectDanger
+from detectMovingObject import detectTailgating
 from ultrasoundsensor import UltrasoundReader
 from ultrasound_thread import UltrasoundThread
 
@@ -74,6 +75,7 @@ def main():
         us_thread.start()
         
         us_distance = us_thread.latest_distance
+        previousUsTimestamp = None       
                 
         # make a copy of the values
         previousValuesX = x.copy()
@@ -95,6 +97,8 @@ def main():
         ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          # set axis limit
         sc.set_color(colors)                                            # set colors array for visualization of areas and velocity direction 
 
+        us_distances = []
+        
         # while running variable is true
         while running:
             
@@ -115,11 +119,14 @@ def main():
                 continue
             
             us_distance = us_thread.latest_distance
-
-            print(
-            f"scan={timestamp} "
-            f"points={len(x)} "
-            f"us={us_distance}")
+            currentUsTimestamp = us_thread.latest_timestamp
+            
+            if currentUsTimestamp != previousUsTimestamp:              
+                us_distances.append(us_distance)
+                
+                if len(us_distances) > 5:
+                    us_distances.pop(0)
+                previousUsTimestamp = currentUsTimestamp
             
             # store the results
             currentX = x
@@ -152,10 +159,12 @@ def main():
             # detect potential danger
             overtakingObject = detectDanger(v_right, r_right, rssi_right, ego_velocity_estimation)
             
-            # print for debugging
-            if us_distance is not None:
-                print(f"US: {us_distance:.2f} m")
+            # detect tailgaters
+            tailgatingObject = detectTailgating(us_distances, ego_velocity_estimation)
             
+            if tailgatingObject:
+                print("Tailgating danger detected")
+                
             # reset all colors to blue
             colors = np.full(len(x), "blue", dtype=object)
             
