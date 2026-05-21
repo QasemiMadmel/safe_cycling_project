@@ -3,10 +3,12 @@
 import os
 import signal
 import sys
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
+from lidar_thread import LidarThread
 from get_velocities import getXandYVelocities
 from save_measurement import save_median_and_ego_velocity_estimation
 from save_measurement import save_rssi
@@ -45,18 +47,31 @@ def main():
     signal.signal(signal.SIGTERM, stop_handler)
 
     # initialize variable (safety)
-    lidar = None
+    lidar_thread = None
+    us_thread = None
 
     try:
-        # thread 1 starts acquiring data from the ultrasound sensor 
+        # thread for lidar data acquisition
+        lidar_thread = LidarThread()
+        lidar_thread.start()
+        
+        while lidar_thread.latest_scan is None: 
+            time.sleep(0.01)
+            
+        # get one scan
+        scan = lidar_thread.latest_scan
+            
+        if scan is not None:
+            r = scan["r"]
+            x = scan["x"]
+            y = scan["y"]
+            timestamp = scan["timestamp"]
+            rssi = scan["rssi"]
+            t_log = scan["t_log"]
+        
+        # thread starts acquiring data from the ultrasound sensor 
         us_thread = UltrasoundThread(filepath_ultrasound)
         us_thread.start()
-        
-        # initialize lidar object
-        lidar = LidarReader()
-        
-        # get one scan
-        r, x, y, t_log, timestamp, rssi = lidar.getScan()
         
         us_distance = us_thread.latest_distance
                 
@@ -84,9 +99,28 @@ def main():
         while running:
             
             # get the next scan 
-            r, x, y, t_log, timestamp, rssi = lidar.getScan()
+            scan = lidar_thread.latest_scan
+            
+            if scan is None: 
+                continue
+            
+            r = scan["r"]
+            x = scan["x"]
+            y = scan["y"]
+            timestamp = scan["timestamp"]
+            rssi = scan["rssi"]
+            t_log = scan["t_log"]
+            
+            if timestamp <= previousTimestamp:
+                continue
             
             us_distance = us_thread.latest_distance
+
+            print(
+            f"scan={timestamp} "
+            f"points={len(x)} "
+            f"us={us_distance}")
+            
             # store the results
             currentX = x
             currentY = y
@@ -96,11 +130,6 @@ def main():
             
             # do not divide by zero
             if dt <= 0:
-                continue
-            
-            # after 71 min overflow in uint32! (sensor time) 
-            # handling the overflow for one scan 
-            if timestamp < previousTimestamp:
                 continue
             
             # calculate the velocity and its direction (via angle) 
@@ -161,8 +190,12 @@ def main():
 
     finally:
         print("Cleaning up and exiting...")
-        us_thread.stop()
-        us_thread.join(timeout=1)
+        if us_thread is not None: 
+            us_thread.stop()
+            us_thread.join(timeout=1)
+        if lidar_thread is not None: 
+            lidar_thread.stop()
+            lidar_thread.join(timeout=1)
         plt.close('all')
         sys.exit(0)
 
