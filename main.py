@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
+from ultrasoundsensor import UltrasoundReader
 from get_velocities import getXandYVelocities
 from save_measurement import save_median_and_ego_velocity_estimation
 from save_measurement import save_rssi
@@ -48,9 +49,13 @@ def main():
         
         # initialize lidar object
         lidar = LidarReader()
+        ultrasound = UltrasoundReader()
         
         # get one scan
         r, x, y, t_log, timestamp, rssi = lidar.getScan()
+        
+        # get the distance from ultrasound sensor 
+        us_distace = ultrasound.getDistance() 
         
         # make a copy of the values
         previousValuesX = x.copy()
@@ -78,6 +83,7 @@ def main():
             # get the next scan 
             r, x, y, t_log, timestamp, rssi = lidar.getScan()
             
+            us_distance = ultrasound.getDistance()
             # store the results
             currentX = x
             currentY = y
@@ -113,6 +119,11 @@ def main():
             
             # detect potential danger
             overtakingObject = detectDanger(v_right, r_right, rssi_right, ego_velocity_estimation)
+            
+            # print for debugging
+            print(
+            f"ego={ego_velocity_estimation:.2f} m/s | "
+            f"us={us_distance:.2f} m")
             
             # reset all colors to blue
             colors = np.full(len(x), "blue", dtype=object)

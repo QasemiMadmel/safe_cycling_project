@@ -1,6 +1,8 @@
 # data_acquisition.py
 
 import os
+import sys
+import datetime
 import time
 import socket
 import numpy as np 
@@ -11,7 +13,12 @@ from filename_handler import create_filename, get_common_suffix
 
 # data storage in measurement directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-config.suffix = get_common_suffix()
+if os.getenv("WEB_START") == "1":
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        config.suffix = f"recording_{timestamp}"
+else:
+        config.suffix = get_common_suffix()
+        
 filepath_scan_r = create_filename(BASE_DIR, "scan", config.suffix)
 filepath_scan_xy = create_filename(BASE_DIR, "scan_xy", config.suffix)
 
