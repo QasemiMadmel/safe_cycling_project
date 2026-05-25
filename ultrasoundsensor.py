@@ -32,12 +32,15 @@ class UltrasoundReader:
 
         start_time = time.time()
         max_time = start_time + config.US_TIMEOUT
-
+			
         while start_time < max_time and GPIO.input(config.US_SENSOR_ECHO) == 0:
             start_time = time.time()
 
         stop_time = start_time
-
+        
+        if start_time > max_time: 
+	        return 0.0
+         
         while stop_time < max_time and GPIO.input(config.US_SENSOR_ECHO) == 1:
             stop_time = time.time()
 
@@ -50,6 +53,9 @@ class UltrasoundReader:
 
         distance = distance_mm / 1000.0
         
+        if distance > config.US_MAX_DISTANCE or distance < config.US_MIN_DISTANCE:
+            return 0.0
+
         self.last_distance = distance
         self.last_measurement = now
         

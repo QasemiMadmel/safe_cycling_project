@@ -27,7 +27,7 @@ def detectTailgating(distances, ego_velocity):
 
     min_distance = 2.0
 
-    if ego_velocity < 10/3.6:
+    if ego_velocity < 5/3.6:
         return False
 
     valid_count = 0

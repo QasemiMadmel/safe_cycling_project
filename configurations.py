@@ -15,8 +15,8 @@ STEP_ANGLE = 0.3333
 START_ANGLE = -45
 
 # limits for the plot (must be adapted based on scenario!)
-PLOT_X_LIMIT = 5
-PLOT_Y_LIMIT = 5
+PLOT_X_LIMIT = 10
+PLOT_Y_LIMIT = 10
 
 # filename suffix
 suffix = ""
@@ -31,6 +31,7 @@ US_SENSOR_TRIGGER = 23
 US_SENSOR_ECHO = 24
 
 US_MAX_DISTANCE = 4.0
+US_MIN_DISTANCE = 0.1
 US_TIMEOUT = 1.0
 US_TRIGGER_TIME = 0.00001
 
