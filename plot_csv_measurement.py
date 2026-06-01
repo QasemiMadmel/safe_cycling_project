@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import configurations as config
-from detectMovingObject import detectDanger
+from detect_moving_object import detect_danger
 import os 
 
 # define paths 
@@ -16,11 +16,10 @@ os.makedirs(measurement_dir, exist_ok=True)
 
 # set filenames for plots (the file that contains xy coordinates as well as the one containing velocities and angles)
 
-filepath_xy = os.path.join(measurement_dir,"25052026_scan_xy_test_street_1.csv")
-filepath_vel = os.path.join(measurement_dir,"25052026_velocities_x_y_test_street_1.csv")
-filepath_scan_r = os.path.join(measurement_dir,"25052026_scan_test_street_1.csv")
-filepath_rssi = os.path.join(measurement_dir,"25052026_rssi_test_street_1.csv")
-filepath_median_and_ego_velocity = os.path.join(measurement_dir,"25052026_median_and_ego_velocity_test_street_1.csv")
+filepath_xy = os.path.join(measurement_dir,"01062026_scan_xy_test.csv")
+filepath_vel = os.path.join(measurement_dir,"01062026_velocities_x_y_test.csv")
+filepath_scan_r = os.path.join(measurement_dir,"01062026_scan_test.csv")
+filepath_ego_velocity = os.path.join(measurement_dir,"01062026_ego_velocity_test.csv")
 
 def playback_lidar():
 
@@ -31,7 +30,6 @@ def playback_lidar():
     xy_data = []
     v_data = []
     r_data = []
-    rssi_data = []
     ego_velocity_data = []
     
     # open both files in read mode and store data in both arrays:
@@ -60,16 +58,8 @@ def playback_lidar():
                 continue
             r = float(row[2])
             r_data.append(r)
-        
-    with open(filepath_rssi, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 2:
-                continue
-            rssi = float(row[1])
-            rssi_data.append(rssi)
-    
-    with open(filepath_median_and_ego_velocity, "r") as f:
+            
+    with open(filepath_ego_velocity, "r") as f:
         reader = csv.reader(f)
         for row in reader:
             if len(row) < 2:
@@ -78,7 +68,7 @@ def playback_lidar():
             ego_velocity_data.append(ego_velocity)
     
     # check if the data arrays are empty 
-    if len(xy_data) == 0 or len(v_data) == 0 or len(rssi_data) == 0 or len(ego_velocity_data) == 0:
+    if len(xy_data) == 0 or len(v_data) == 0 or len(ego_velocity_data) == 0:
         print("no data was found")
         return
     
@@ -101,7 +91,6 @@ def playback_lidar():
     v_data = v_data[:min_len]
     ego_velocity_data = ego_velocity_data[:min_len]
     r_data = r_data[:min_len]
-    rssi_data = rssi_data[:min_len]
     ego_velocity_data = ego_velocity_data[:num_frames]
 
     # create figure and axes
@@ -119,24 +108,22 @@ def playback_lidar():
         y = np.array([p[1] for p in xy_data[start:end]])
         v = np.array(v_data[start:end])
         r = np.array(r_data[start:end])
-        rssi = np.array(rssi_data[start:end])
         egoVel = ego_velocity_data[i]
         
         # check if data is empty
-        if len(x) == 0 or len(v) == 0 or len(r) == 0 or len(rssi) == 0:
+        if len(x) == 0 or len(y) == 0 or len(v) == 0 or len(r) == 0:
             continue
             
         v_right = v[0:212]
         r_right = r[0:212]
-        rssi_right = rssi[0:212]
         
-        overtakingCar = detectDanger(v_right, r_right, rssi_right, egoVel)
+        overtakingCar = detect_danger(v_right, r_right, egoVel)
 
         # set parameters of the plot
         colors = np.full(len(x), "blue", dtype=object)
         colors[overtakingCar] = "red" 
         ax.clear()                                                      # clean up previous scan
-        ax.scatter(x, y, s=20, c=colors)                                 # x, y and point size
+        ax.scatter(x, y, s=20, c=colors)                                # x, y and point size
         ax.scatter(0, 0, color="red", s=20)                             # plot the sensor itself in red 
         ax.set_title(f"LiDAR Playback (Frame {i})")                     # title
         ax.set_xlabel("x (m)")                                          # label x

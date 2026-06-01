@@ -2,7 +2,7 @@
 
 import csv
 
-def save_values_x_y(filename, x, y, t):
+def save_values_x_y(filename, t, x, y):
     
     # open file in append mode
     with open(filename, "a", newline="") as f:
@@ -10,11 +10,11 @@ def save_values_x_y(filename, x, y, t):
         # use csv writer
         writer = csv.writer(f)
         
-        # iterate over two lists and write the values iin the file
+        # iterate over two lists and write the values in the file
         for value_x, value_y in zip(x, y):
             writer.writerow([t, value_x, value_y])
 
-def save_vx_vy(filename, vx, vy, v, t):
+def save_vx_vy(filename, t, vx, vy, v):
     
     # open file in append mode
     with open(filename, "a", newline="") as f:
@@ -26,7 +26,7 @@ def save_vx_vy(filename, vx, vy, v, t):
         for value_vx, value_vy, value_v in zip(vx, vy, v):
             writer.writerow([t, value_vx, value_vy, value_v])
             
-def save_scan(filename, distances, t):
+def save_scan(filename, t, distances):
 
     # open file in append mode
     with open(filename, "a", newline="") as f:
@@ -39,21 +39,13 @@ def save_scan(filename, distances, t):
             writer.writerow([t, i, d])
 
 
-def save_median_and_ego_velocity_estimation(filename, t, median_right, ego_velocity):
+def save_ego_velocity(filename, t, ego_velocity):
     
     # open file in append mode
     with open(filename, "a", newline="") as f:
         
         # use csv writer
         writer = csv.writer(f)
-        writer.writerow([t, median_right, ego_velocity])
+        writer.writerow([t, ego_velocity])
          
-            
-def save_rssi(filepath, rssi, t_log):
-    
-    # open file in append mode
-    with open(filepath, "a") as f:
 
-        for val in rssi:
-
-            f.write(f"{t_log},{val}\n") # time, intensity

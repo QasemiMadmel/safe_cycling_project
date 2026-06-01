@@ -26,13 +26,3 @@ valid_start = 195
 valid_stop = 616
 valid_length = valid_stop - valid_start
 
-# ultrasound sensor parameter
-US_SENSOR_TRIGGER = 23
-US_SENSOR_ECHO = 24
-
-US_MAX_DISTANCE = 4.0
-US_MIN_DISTANCE = 0.1
-US_TIMEOUT = 1.0
-US_TRIGGER_TIME = 0.00001
-
-US_SOUND_SPEED = 343460 / 2

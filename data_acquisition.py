@@ -22,10 +22,6 @@ else:
 filepath_scan_r = create_filename(BASE_DIR, "scan", config.suffix)
 filepath_scan_xy = create_filename(BASE_DIR, "scan_xy", config.suffix)
 
-# default file names (data will be overwritten with each new measurement): 
-#filepath_scan_r = create_filename(BASE_DIR, "scan") 
-#filepath_scan_xy = create_filename(BASE_DIR, "scan_xy")
-
 class LidarReader: 
         def __init__(self):
                 
@@ -44,7 +40,7 @@ class LidarReader:
                 # calculating the number of angles that the sensor transmits based on steps and number of points
                 self.angleDeg_full = config.START_ANGLE + np.arange(config.DISTANCE_POINTS_COUNT) * config.STEP_ANGLE
                 
-                # limiting the field of view for rapid processing and avoiding redundancies
+                # limiting the field of view for rapid processing and avoiding redundancies (20° to 160°) 421 points
                 self.angleDeg = self.angleDeg_full[config.valid_start:config.valid_stop]
                 
                 # degrees into radian
@@ -100,7 +96,6 @@ class LidarReader:
                         i = tokens.index("DIST1")
                         
                         # ignore metadata and store all points
-                        #distanceRawValues = tokens[i+6: i+6+config.DISTANCE_POINTS_COUNT]           # for the full field of view
                         distanceRawValues = tokens[i+6+config.valid_start: i+6+config.valid_stop]    # store only specific area 
                         
                         # check if scan has (full fov: 811 points/ limited fov: 421 points)
@@ -122,34 +117,14 @@ class LidarReader:
                         r = distances / 1000                            # millimeter to meter
                         x = r * np.cos(self.angleRad)                   # x coordinates
                         y = r * np.sin(self.angleRad)                   # y coordinates
-                        # t = time.perf_counter_ns()                    # high resolution counter  
                         t = int(tokens[i-10],16)                        # time from sensor telegram
                         t_log = time.time()                             # time (for logging only)
                         
-                        save_scan(filepath_scan_r, r, t_log)            # save scan (time, angle, distance)
-                        save_values_x_y(filepath_scan_xy, x, y, t_log)  # save scan (time, x, y)
+                        save_scan(filepath_scan_r, t_log, r)            # save scan (time, distance)
+                        save_values_x_y(filepath_scan_xy, t_log, x, y)  # save scan (time, x, y)
                         
-                        # use the same method to store the intensity values
-                        if "RSSI1" not in tokens: 
-                            continue
-                        
-                        j = tokens.index("RSSI1")
-                        
-                        intensityRawValues = tokens[j+6+config.valid_start: j+6+config.valid_stop]
-                        if len(intensityRawValues) != config.valid_length:
-                            print("incomplete scan")
-                            continue
-                                                
-                        rssi_list = []
-                        for val in intensityRawValues:
-                            # convert into integer to store    
-                            value_rssi = int(val, 16)
-                            # add to list
-                            rssi_list.append(value_rssi)
-                            
-                        rssi = np.array(rssi_list, dtype=np.float32)
-                        
+
                         gotScan = True                                  # scan is complete, to stop the iterations set the variable to true
-                        return r, x, y, t_log, t, rssi                  # return all data 
+                        return r, x, y, t_log, t                        # return all data 
 
 

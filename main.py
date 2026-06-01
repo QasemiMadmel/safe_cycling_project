@@ -9,23 +9,18 @@ import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
 from lidar_thread import LidarThread
-from get_velocities import getXandYVelocities
-from save_measurement import save_median_and_ego_velocity_estimation
-from save_measurement import save_rssi
+from get_velocities import get_x_y_velocities
+from save_measurement import save_ego_velocity
 from filename_handler import create_filename
-from detectMovingObject import detectDanger
-from detectMovingObject import detectTailgating
-from ultrasoundsensor import UltrasoundReader
-from ultrasound_thread import UltrasoundThread
+from detect_moving_object import detect_danger
+import traceback
 
 # global variable: to stop program with a shortcut
 running = True
 
-# filepath for median values
+# filepath for ego velocity
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-filepath_median = create_filename(BASE_DIR, "median_and_ego_velocity", config.suffix)
-filepath_rssi = create_filename(BASE_DIR, "rssi", config.suffix)
-filepath_ultrasound = create_filename(BASE_DIR, "ultrasound", config.suffix)
+filepath_ego_velocity = create_filename(BASE_DIR, "ego_velocity", config.suffix)
 
 def stop_handler(signum, frame):
     
@@ -49,7 +44,6 @@ def main():
 
     # initialize variable (safety)
     lidar_thread = None
-    us_thread = None
 
     try:
         # thread for lidar data acquisition
@@ -67,14 +61,8 @@ def main():
             x = scan["x"]
             y = scan["y"]
             timestamp = scan["timestamp"]
-            rssi = scan["rssi"]
             t_log = scan["t_log"]
-        
-        # thread starts acquiring data from the ultrasound sensor 
-        us_thread = UltrasoundThread(filepath_ultrasound)
-        us_thread.start()
-        
-        us_distance = us_thread.latest_distance
+                
         previousUsTimestamp = None       
                 
         # make a copy of the values
@@ -84,8 +72,6 @@ def main():
         previousMedian = 0                                              # set the median for first scan to zero 
         alpha = 0.1
         beta = 1 - alpha 
-
-        save_rssi(filepath_rssi, rssi, t_log)                           # save the intensity values for the first scan
         
         # create a plot: 
         plt.ion()                                                       # interactive mode
@@ -97,9 +83,7 @@ def main():
         ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          # set axis limit
         sc.set_color(colors)                                            # set colors array for visualization of areas and velocity direction 
 
-        us_distances = []
-        
-        # while running variable is true
+  
         while running:
             
             # get the next scan 
@@ -112,21 +96,10 @@ def main():
             x = scan["x"]
             y = scan["y"]
             timestamp = scan["timestamp"]
-            rssi = scan["rssi"]
             t_log = scan["t_log"]
             
             if timestamp <= previousTimestamp:
                 continue
-            
-            us_distance = us_thread.latest_distance
-            currentUsTimestamp = us_thread.latest_timestamp
-            
-            if currentUsTimestamp != previousUsTimestamp:              
-                us_distances.append(us_distance)
-                
-                if len(us_distances) > 5:
-                    us_distances.pop(0)
-                previousUsTimestamp = currentUsTimestamp
             
             # store the results
             currentX = x
@@ -140,12 +113,11 @@ def main():
                 continue
             
             # calculate the velocity and its direction (via angle) 
-            vx, vy, v = getXandYVelocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
+            vx, vy, v = get_x_y_velocities(previousValuesX, currentX, previousValuesY, currentY, dt, timestamp)
             
             # the median of the velocity for right measurment area:
             v_right = v[0:212]
             r_right = r[0:212]
-            rssi_right = rssi[0:212]
    
             # calculate median of the velocity for the right side of the sensor 
             current_median_right_area = np.nanmedian(v_right)
@@ -154,17 +126,11 @@ def main():
                current_median_right_area = previousMedian
                
             # alpha filter for an estimation of ego motion velocity
-            ego_velocity_estimation = alpha * current_median_right_area + beta * previousMedian  # threshold for detection of moving object
+            ego_velocity_estimation = alpha * current_median_right_area + beta * previousMedian  # estimation of own velocity
             
             # detect potential danger
-            overtakingObject = detectDanger(v_right, r_right, rssi_right, ego_velocity_estimation)
+            overtakingObject = detect_danger(v_right, r_right, ego_velocity_estimation)
             
-            # detect tailgaters
-            tailgatingObject = detectTailgating(us_distances, ego_velocity_estimation)
-            
-            if tailgatingObject:
-                print("Tailgating danger detected")
-                
             # reset all colors to blue
             colors = np.full(len(x), "blue", dtype=object)
             
@@ -172,8 +138,7 @@ def main():
             colors[overtakingObject] = "red"
             
             # save values in a file
-            save_median_and_ego_velocity_estimation(filepath_median, timestamp, current_median_right_area, ego_velocity_estimation)             # save median values
-            save_rssi(filepath_rssi, rssi, t_log)                       # save all rssi values 
+            save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation)              # save median values
             
             # join x and y values into Nx2 array for plotting ([x1,y1], [x2,y2], [x3,y3]...) 
             sc.set_offsets(np.column_stack((x, y)))
@@ -196,12 +161,10 @@ def main():
 
     except Exception as e:
         print(f"Error: {e}")
+        traceback.print_exc()
 
     finally:
         print("Cleaning up and exiting...")
-        if us_thread is not None: 
-            us_thread.stop()
-            us_thread.join(timeout=1)
         if lidar_thread is not None: 
             lidar_thread.stop()
             lidar_thread.join(timeout=1)

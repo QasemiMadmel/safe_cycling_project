@@ -28,7 +28,7 @@ class LidarThread(threading.Thread):
             try:
 
                 # get one complete scan
-                r, x, y, t_log, timestamp, rssi = self.lidar.getScan()
+                r, x, y, t_log, timestamp = self.lidar.getScan()
 
                 # store latest scan
                 self.latest_scan = {
@@ -36,8 +36,7 @@ class LidarThread(threading.Thread):
                     "x": x,
                     "y": y,
                     "t_log": t_log,
-                    "timestamp": timestamp,
-                    "rssi": rssi
+                    "timestamp": timestamp
                 }
 
             except Exception as e:
