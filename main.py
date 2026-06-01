@@ -17,7 +17,7 @@ from detect_moving_object import detect_danger
 from extract_points_in_critical_area import extract_points_in_critical_area
 from clustering import cluster_segments
 from clustering import merge_segments_into_clusters
-from tracking import track_clusters_between_scans
+from tracking import track_clusters
 
 # global variable: to stop program with a shortcut
 running = True
@@ -90,6 +90,8 @@ def main():
         previous_median = 0                                             # set the median for first scan to zero 
         alpha = 0.1
         beta = 1 - alpha 
+        gotFourScans = False
+        count = 0
         
         critical_x_previous, critical_y_previous = extract_points_in_critical_area(previous_x_values, previous_y_values)
         segments_previous_scan = cluster_segments(critical_x_previous, critical_y_previous, num_scan)
@@ -141,16 +143,14 @@ def main():
             # use neighbouring points to build segments in ecah scan and merge them into clusters if they are close to each other
             segments_current_scan = cluster_segments(critical_x_current, critical_y_current, scan_num_current)
             clusters_current_scan = merge_segments_into_clusters(segments_current_scan)
-            clusters_current_scan_with_id, match_found = track_clusters(clusters_previous_scan, clusters_current_scan)
             
-            if match_found == False
-                clusters_with_id, match_found = track_clusters(clusters_two_scans_ago, clusters_current_scan)               
-                if match_found == False 
-                    clusters_with_id, match_found = track_clusters(clusters_three_scans_ago, clusters_current_scan)                
-                    
-            for cluster in clusters_current_scan:
-                cluster["id"] = next_id 
-                next_id += 1
+            clusters_current_scan_tracked = clusters_current_scan
+            if gotFourScans is True:
+                clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
+                                                                            clusters_two_scans_ago,
+                                                                            clusters_previous_scan,
+                                                                            clusters_current_scan, 
+                                                                            next_id)
             
             # calculate the time between two consecutive scans 
             dt = (timestamp - previous_timestamp) / 1e6
@@ -217,8 +217,12 @@ def main():
             previous_median = ego_velocity_estimation
             clusters_three_scans_ago = clusters_two_scans_ago
             clusters_two_scans_ago = clusters_previous_scan
-            clusters_previous_scan = clusters_current_scan_with_id
-
+            clusters_previous_scan = clusters_current_scan_tracked
+            
+            if gotFourScans is False:
+                count += 1
+            if count >= 3:
+                gotFourScans =True
 
     # handle keyboardinterrupt to stop the program 
     except KeyboardInterrupt:

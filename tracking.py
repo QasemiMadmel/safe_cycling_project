@@ -1,28 +1,96 @@
+# tracking.py
+
 import numpy as np
 
-def track_clusters(scan_previous_with_clusters, scan_current_with_clusters):
+def track_clusters(
+        three_scans_ago,
+        two_scans_ago,
+        previous_scan,
+        current_scan,
+        next_id):
 
     threshold = 0.8
-    match_found = False
-    
-    for current_cluster in scan_current_with_clusters:
-        closest_mean_distance = np.inf
-        closest_cluster_id = None
 
-        for previous_scan_cluster in scan_previous_with_clusters:
+    for current_cluster in current_scan:
 
-            delta_x = (current_cluster["center"]["x"] - previous_scan_cluster["center"]["x"])
-            delta_y = (current_cluster["center"]["y"] - previous_scan_cluster["center"]["y"])
+        cluster_matched = False
 
-            distance = np.sqrt(delta_x**2 + delta_y**2)
+        #
+        # Scan -1
+        #
+        closest_distance = np.inf
+        closest_id = None
 
-            if distance < closest_mean_distance:
+        for old_cluster in previous_scan:
 
-                closest_mean_distance = distance
-                closest_cluster_id = previous_scan_cluster["id"]
+            dx = current_cluster["center"]["x"] - old_cluster["center"]["x"]
+            dy = current_cluster["center"]["y"] - old_cluster["center"]["y"]
 
-        if closest_mean_distance < threshold and closest_cluster_id is not None:
-            current_cluster["id"] = closest_cluster_id
-            match_found = True            
+            distance = np.sqrt(dx**2 + dy**2)
 
-    return scan_current_with_clusters, match_found
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_id = old_cluster["id"]
+
+        if closest_distance < threshold:
+
+            current_cluster["id"] = closest_id
+            cluster_matched = True
+
+        #
+        # Scan -2
+        #
+        if not cluster_matched:
+
+            closest_distance = np.inf
+            closest_id = None
+
+            for old_cluster in two_scans_ago:
+
+                dx = current_cluster["center"]["x"] - old_cluster["center"]["x"]
+                dy = current_cluster["center"]["y"] - old_cluster["center"]["y"]
+
+                distance = np.sqrt(dx**2 + dy**2)
+
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_id = old_cluster["id"]
+
+            if closest_distance < threshold:
+
+                current_cluster["id"] = closest_id
+                cluster_matched = True
+
+        #
+        # Scan -3
+        #
+        if not cluster_matched:
+
+            closest_distance = np.inf
+            closest_id = None
+
+            for old_cluster in three_scans_ago:
+
+                dx = current_cluster["center"]["x"] - old_cluster["center"]["x"]
+                dy = current_cluster["center"]["y"] - old_cluster["center"]["y"]
+
+                distance = np.sqrt(dx**2 + dy**2)
+
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_id = old_cluster["id"]
+
+            if closest_distance < threshold:
+
+                current_cluster["id"] = closest_id
+                cluster_matched = True
+
+        #
+        # new ID
+        #
+        if not cluster_matched:
+
+            current_cluster["id"] = next_id
+            next_id += 1
+
+    return current_scan, next_id
