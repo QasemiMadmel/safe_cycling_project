@@ -16,11 +16,11 @@ os.makedirs(measurement_dir, exist_ok=True)
 
 # set filenames for plots (the file that contains xy coordinates as well as the one containing velocities and angles)
 
-filepath_xy = os.path.join(measurement_dir,"24052026_scan_xy_tailgating_2.csv")
-filepath_vel = os.path.join(measurement_dir,"24052026_velocities_x_y_tailgating_2.csv")
-filepath_scan_r = os.path.join(measurement_dir,"24052026_scan_tailgating_2.csv")
-filepath_rssi = os.path.join(measurement_dir,"24052026_rssi_tailgating_2.csv")
-filepath_median_and_ego_velocity = os.path.join(measurement_dir,"24052026_median_and_ego_velocity_tailgating_2.csv")
+filepath_xy = os.path.join(measurement_dir,"25052026_scan_xy_test_street_1.csv")
+filepath_vel = os.path.join(measurement_dir,"25052026_velocities_x_y_test_street_1.csv")
+filepath_scan_r = os.path.join(measurement_dir,"25052026_scan_test_street_1.csv")
+filepath_rssi = os.path.join(measurement_dir,"25052026_rssi_test_street_1.csv")
+filepath_median_and_ego_velocity = os.path.join(measurement_dir,"25052026_median_and_ego_velocity_test_street_1.csv")
 
 def playback_lidar():
 
