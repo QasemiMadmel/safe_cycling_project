@@ -55,6 +55,7 @@ class LidarReader:
                 
                 # variable that controls the amount of iterations
                 gotScan = False
+                scan_number = 0
                 
                 while not gotScan:
                     
@@ -119,12 +120,13 @@ class LidarReader:
                         y = r * np.sin(self.angleRad)                   # y coordinates
                         t = int(tokens[i-10],16)                        # time from sensor telegram
                         t_log = time.time()                             # time (for logging only)
+                        scan_number = scan_number + 1                   # to keep count of scans
                         
                         save_scan(filepath_scan_r, t_log, r)            # save scan (time, distance)
                         save_values_x_y(filepath_scan_xy, t_log, x, y)  # save scan (time, x, y)
                         
 
                         gotScan = True                                  # scan is complete, to stop the iterations set the variable to true
-                        return r, x, y, t_log, t                        # return all data 
+                        return r, x, y, t_log, t, scan_number           # return all data 
 
 
