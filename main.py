@@ -18,53 +18,34 @@ from extract_points_in_critical_area import extract_points_in_critical_area
 from clustering import cluster_segments
 from clustering import merge_segments_into_clusters
 from tracking import track_clusters
+from plot_clusters import plot_clusters
 
-# global variable: to stop program with a shortcut
 running = True
 
-# filepath for ego velocity
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 filepath_ego_velocity = create_filename(BASE_DIR, "ego_velocity", config.suffix)
 
 def stop_handler(signum, frame):
     
-    # global 
     global running 
-    
-    # control + c 
     print(f"Stop signal received: {signum}")  
-   
-    # set the variable to false to stop running 
     running = False
 
 def main():
     
-    # global variable to control the flow of the program 
     global running
 
-    # signal function ...
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
 
-    # initialize variable (safety)
     lidar_thread = None
 
     try:
-        # thread for lidar data acquisition
         lidar_thread = LidarThread()
         lidar_thread.start()
         
         
-        cluster_colors = [
-            "red",
-            "green",
-            "cyan",
-            "magenta",
-            "yellow",
-            "black",
-            "orange",
-            "purple"
-        ]
+        cluster_colors = ["red", "green", "cyan", "magenta", "yellow", "black", "orange", "purple"]
         
         while lidar_thread.latest_scan is None: 
             time.sleep(0.01)
@@ -81,21 +62,21 @@ def main():
             num_scan = scan["scan_number"]
                 
         previousUsTimestamp = None       
-                
-        # make a copy of the values
         previous_x_values = x.copy()
         previous_y_values = y.copy()
         previous_timestamp = timestamp
         previous_scan_count = num_scan
-        previous_median = 0                                             # set the median for first scan to zero 
+        previous_median = 0                                             
         alpha = 0.1
         beta = 1 - alpha 
+        
         gotFourScans = False
         count = 0
         
         critical_x_previous, critical_y_previous = extract_points_in_critical_area(previous_x_values, previous_y_values)
         segments_previous_scan = cluster_segments(critical_x_previous, critical_y_previous, num_scan)
         clusters_previous_scan = merge_segments_into_clusters(segments_previous_scan)
+        
         clusters_two_scans_ago = []
         clusters_three_scans_ago = []
         
@@ -104,17 +85,16 @@ def main():
             cluster["id"] = next_id
             next_id += 1
         
-        # create a plot: 
-        plt.ion()                                                       # interactive mode
-        fig, ax = plt.subplots()                                        # create a figure and the axes
-        colors = np.full(len(x), "blue", dtype=object)                  # create an array of colors for the points (default color is blue)
-        sc = ax.scatter(x, y, s=2, c=colors)                            # give scatter the x and y coordinates, point size 2 and the color array
-        ax.set_aspect('equal')                                          # both axes should remain equal
-        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          # set axis limit
-        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          # set axis limit
-        sc.set_color(colors)                                            # set colors array for visualization of areas and velocity direction 
+        plt.ion()                                                       
+        fig, ax = plt.subplots()                                       
+        colors = np.full(len(x), "blue", dtype=object)                  
+        sc = ax.scatter(x, y, s=2, c=colors)                            
+        ax.set_aspect('equal')                                          
+        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          
+        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          
+        sc.set_color(colors)                                            
 
-  
+
         while running:
             
             # get the next scan 
@@ -133,84 +113,50 @@ def main():
             if timestamp <= previous_timestamp:
                 continue
             
-            # store the results
+
             current_x = x
             current_y = y
             
-            # extract points in the area close to sensor
+ 
             critical_x_current, critical_y_current = extract_points_in_critical_area(current_x, current_y)
-            
-            # use neighbouring points to build segments in ecah scan and merge them into clusters if they are close to each other
             segments_current_scan = cluster_segments(critical_x_current, critical_y_current, scan_num_current)
             clusters_current_scan = merge_segments_into_clusters(segments_current_scan)
             
             clusters_current_scan_tracked = clusters_current_scan
             if gotFourScans is True:
                 clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
-                                                                            clusters_two_scans_ago,
-                                                                            clusters_previous_scan,
-                                                                            clusters_current_scan, 
-                                                                            next_id)
+                                                                        clusters_two_scans_ago,
+                                                                        clusters_previous_scan,
+                                                                        clusters_current_scan, 
+                                                                        next_id)
             
-            # calculate the time between two consecutive scans 
+
             dt = (timestamp - previous_timestamp) / 1e6
             
-            # do not divide by zero
             if dt <= 0:
                 continue
             
-            # calculate the velocity and its direction (via angle) 
             vx, vy, v = get_x_y_velocities(previous_x_values, current_x, previous_y_values, current_y, dt, timestamp)
-            
-            # the median of the velocity for right measurment area:
+
             v_right = v[0:212]
             r_right = r[0:212]
    
-            # calculate median of the velocity for the right side of the sensor 
             current_median_right_area = np.nanmedian(v_right)
             
             if np.isnan(current_median_right_area):
                current_median_right_area = previous_median
                
-            # alpha filter for an estimation of ego motion velocity
-            ego_velocity_estimation = alpha * current_median_right_area + beta * previous_median  # estimation of own velocity
-                        
-            # reset all colors to blue
-            colors = np.full(len(x), "blue", dtype=object)
-        
-            # save values in a file
-            save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation)              # save median values
+            ego_velocity_estimation = alpha * current_median_right_area + beta * previous_median  
+            save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation) 
+
             
-            # join x and y values into Nx2 array for plotting ([x1,y1], [x2,y2], [x3,y3]...) 
+            colors = np.full(len(x), "blue", dtype=object)        
             sc.set_offsets(np.column_stack((x, y)))
-            
-            # set the colors
             sc.set_color(colors) 
-            
-            ax.clear()
-            ax.scatter(x, y, s= 2, c="blue")
-            
-            # paint clusters
-            for idx, cluster in enumerate(clusters_current_scan):
-
-                color = cluster_colors[
-                idx % len(cluster_colors)
-                ]
-
-                ax.scatter(
-                cluster["x"],
-                cluster["y"],
-                s=20,
-                c=color
-                )
-            ax.set_aspect("equal")
-            ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)
-            ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)
-            
-            # pause to see the plot transformation (animation effect)
+            plot_clusters(ax, x, y, clusters_current_scan_tracked, cluster_colors, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
             plt.pause(0.001)
 
-            # set the current scan as previous for next calculations 
+            
             previous_x_values = current_x.copy()
             previous_y_values = current_y.copy()
             previous_timestamp = timestamp
@@ -224,7 +170,6 @@ def main():
             if count >= 3:
                 gotFourScans =True
 
-    # handle keyboardinterrupt to stop the program 
     except KeyboardInterrupt:
         print("KeyboardInterrupt received. Stopping...")
 
