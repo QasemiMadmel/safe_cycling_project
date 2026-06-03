@@ -94,3 +94,12 @@ def track_clusters(
             next_id += 1
 
     return current_scan, next_id
+
+
+def set_default_id(scan, next_id):
+	
+	for cluster in scan: 
+		cluster["id"] = next_id
+		next_id += 1
+	    
+	return next_id

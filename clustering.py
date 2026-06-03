@@ -72,7 +72,7 @@ def cluster_segments(x, y, num_scan):
 def merge_segments_into_clusters(segments):
 
     threshold_x = 0.5
-    merge_threshold = 0.7
+    merge_threshold = 0.8
     min_cluster_size = 3
     merged_clusters = []
     used = [False] * len(segments)
