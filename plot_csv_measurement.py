@@ -21,7 +21,6 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 
 filepath_xy = os.path.join(measurement_dir, "04062026_scan_xy_test.csv")
 
-
 def load_xy_scans(filepath, points_per_scan=421):
 
     x_all = []
