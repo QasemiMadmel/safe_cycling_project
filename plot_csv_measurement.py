@@ -1,142 +1,126 @@
-# -*- coding: utf-8 -*-
+# plot_csv_measurement.py
 
+import os
+import csv
+import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-import numpy as np
-import csv
-import configurations as config
-from detect_moving_object import detect_danger
-import os 
 
-# define paths 
+import configurations as config
+from extract_points_in_critical_area import extract_points_in_critical_area
+from clustering import cluster_segments
+from clustering import merge_segments_into_clusters
+from tracking import track_clusters
+from tracking import set_default_id
+from plot_clusters import plot_clusters
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 measurement_dir = os.path.join(BASE_DIR, "measurements")
-os.makedirs(measurement_dir, exist_ok=True)
 
-# set filenames for plots (the file that contains xy coordinates as well as the one containing velocities and angles)
+filepath_xy = os.path.join(measurement_dir, "04062026_scan_xy_test.csv")
 
-filepath_xy = os.path.join(measurement_dir,"01062026_scan_xy_test.csv")
-filepath_vel = os.path.join(measurement_dir,"01062026_velocities_x_y_test.csv")
-filepath_scan_r = os.path.join(measurement_dir,"01062026_scan_test.csv")
-filepath_ego_velocity = os.path.join(measurement_dir,"01062026_ego_velocity_test.csv")
 
-def playback_lidar():
+def load_xy_scans(filepath, points_per_scan=421):
 
-    # interactive mode 
-    plt.ion()
-    
-    # arrays to store the data 
-    xy_data = []
-    v_data = []
-    r_data = []
-    ego_velocity_data = []
-    
-    # open both files in read mode and store data in both arrays:
-    
-    with open(filepath_xy, "r") as f:
+    x_all = []
+    y_all = []
+
+    with open(filepath, "r") as f:
         reader = csv.reader(f)
+
         for row in reader:
             if len(row) < 3:
                 continue
-            x = float(row[1])
-            y = float(row[2])
-            xy_data.append((x, y))
 
-    with open(filepath_vel, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 4:
+            try:
+                x_all.append(float(row[1]))
+                y_all.append(float(row[2]))
+            except ValueError:
                 continue
-            v = float(row[3])
-            v_data.append(v)
-    
-    with open(filepath_scan_r, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 3:
-                continue
-            r = float(row[2])
-            r_data.append(r)
-            
-    with open(filepath_ego_velocity, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 2:
-                continue
-            ego_velocity = float(row[1])
-            ego_velocity_data.append(ego_velocity)
-    
-    # check if the data arrays are empty 
-    if len(xy_data) == 0 or len(v_data) == 0 or len(ego_velocity_data) == 0:
-        print("no data was found")
-        return
-    
-    # number of points for a single scan if the view is limited 
+
+    x_all = np.array(x_all)
+    y_all = np.array(y_all)
+
+    num_frames = len(x_all) // points_per_scan
+
+    x_all = x_all[:num_frames * points_per_scan]
+    y_all = y_all[:num_frames * points_per_scan]
+
+    x_scans = x_all.reshape(num_frames, points_per_scan)
+    y_scans = y_all.reshape(num_frames, points_per_scan)
+
+    return x_scans, y_scans
+
+
+def playback_lidar_with_tracking():
+
     points_per_scan = 421
-    
-    # the number of scans stored for velocities are usually below the number of scans actually captured 
-    # skip the first scan! (synchronizing data)
-    xy_data = xy_data[points_per_scan:] 
-    
-    # get the length of the smaller array
-    min_len = min(len(xy_data), len(v_data))
-    
-    # calculate the number of frames 
-    num_frames = len(xy_data) // points_per_scan
-    print("Number of frames:", num_frames)
 
-    # cut to the minimum length
-    xy_data = xy_data[:min_len]
-    v_data = v_data[:min_len]
-    ego_velocity_data = ego_velocity_data[:min_len]
-    r_data = r_data[:min_len]
-    ego_velocity_data = ego_velocity_data[:num_frames]
+    x_scans, y_scans = load_xy_scans(filepath_xy, points_per_scan)
 
-    # create figure and axes
+    if len(x_scans) == 0:
+        print("No data found")
+        return
+
+    next_id = 1
+    got_four_scans = False
+    count = 0
+
+    clusters_previous_scan = []
+    clusters_two_scans_ago = []
+    clusters_three_scans_ago = []
+
+    plt.ion()
     fig, ax = plt.subplots()
-    
-    # for each frame
-    for i in range(num_frames):
 
-        # set the start and end index of the points based on the number of points available for a single scan 
-        start = i * points_per_scan
-        end = start + points_per_scan
+    for scan_index in range(len(x_scans)):
 
-        # extract x,y arrays from the current scan
-        x = np.array([p[0] for p in xy_data[start:end]])
-        y = np.array([p[1] for p in xy_data[start:end]])
-        v = np.array(v_data[start:end])
-        r = np.array(r_data[start:end])
-        egoVel = ego_velocity_data[i]
+        x = x_scans[scan_index]
+        y = y_scans[scan_index]
+        num_scan = scan_index
+
+        critical_x, critical_y = extract_points_in_critical_area(x, y)
+        segments_current_scan = cluster_segments(critical_x, critical_y, num_scan)
+        clusters_current_scan = merge_segments_into_clusters(segments_current_scan)
+
+        if scan_index == 0:
+            for cluster in clusters_current_scan:
+                cluster["id"] = next_id
+                next_id += 1
+            clusters_current_scan_tracked = clusters_current_scan
+        else:
+            if got_four_scans:
+                clusters_current_scan_tracked, next_id = track_clusters(
+                    clusters_three_scans_ago,
+                    clusters_two_scans_ago,
+                    clusters_previous_scan,
+                    clusters_current_scan,
+                    next_id)
+            else:
+                clusters_current_scan_tracked = clusters_current_scan
+                next_id = set_default_id(clusters_current_scan_tracked, next_id)
+
+        plot_clusters(ax, x, y, clusters_current_scan_tracked, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
         
-        # check if data is empty
-        if len(x) == 0 or len(y) == 0 or len(v) == 0 or len(r) == 0:
-            continue
-            
-        v_right = v[0:212]
-        r_right = r[0:212]
-        
-        overtakingCar = detect_danger(v_right, r_right, egoVel)
+        ax.set_title(f"CSV Playback with Tracking - Scan {scan_index}")
+        plt.pause(0.03)
 
-        # set parameters of the plot
-        colors = np.full(len(x), "blue", dtype=object)
-        colors[overtakingCar] = "red" 
-        ax.clear()                                                      # clean up previous scan
-        ax.scatter(x, y, s=20, c=colors)                                # x, y and point size
-        ax.scatter(0, 0, color="red", s=20)                             # plot the sensor itself in red 
-        ax.set_title(f"LiDAR Playback (Frame {i})")                     # title
-        ax.set_xlabel("x (m)")                                          # label x
-        ax.set_ylabel("y (m)")                                          # label y
-        ax.set_xlim(-config.PLOT_X_LIMIT, config.PLOT_X_LIMIT)          # set limit for x axis
-        ax.set_ylim(-config.PLOT_Y_LIMIT, config.PLOT_Y_LIMIT)          # set limit for y axis
-        ax.set_aspect("equal")                                          # both axes should be equal
-        plt.pause(0.03)                                                 # pause for animation effect
+        clusters_three_scans_ago = clusters_two_scans_ago
+        clusters_two_scans_ago = clusters_previous_scan
+        clusters_previous_scan = clusters_current_scan_tracked
+
+        if got_four_scans is False:
+            count += 1
+
+        if count >= 3:
+            got_four_scans = True
 
     print("Playback done")
 
-    plt.ioff()                                                          # end of interactive mode
+    plt.ioff()
     plt.show()
-        
-playback_lidar()
 
+if __name__ == "__main__":
+    playback_lidar_with_tracking()
