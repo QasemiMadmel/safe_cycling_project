@@ -20,6 +20,7 @@ from clustering import merge_segments_into_clusters
 from tracking import track_clusters
 from tracking import set_default_id
 from plot_clusters import plot_clusters
+from detect_moving_object import detect_danger
 
 # global variable to control the flow of the program
 running = True
@@ -173,8 +174,19 @@ def main():
             ego_velocity_estimation = alpha * current_median_right_area + beta * previous_median  
             save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation) 
 
+            # danger detection 
+            if gotFourScans:
+                danger = detect_danger(ego_velocity_estimation, 
+                                        num_scan,
+                                        clusters_current_scan_tracked,
+                                        clusters_previous_scan,
+                                        clusters_two_scans_ago,
+                                        clusters_three_scans_ago)
+            else:
+                danger = []
+            
             # plot the measurement
-            plot_clusters(ax, x, y, clusters_current_scan_tracked, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
+            plot_clusters(ax, x, y, clusters_current_scan_tracked, danger, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
             
             # pause in between scans for animation effect
             plt.pause(0.001)
