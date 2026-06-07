@@ -15,8 +15,8 @@ STEP_ANGLE = 0.3333
 START_ANGLE = -45
 
 # limits for the plot (must be adapted based on scenario!)
-PLOT_X_LIMIT = 3
-PLOT_Y_LIMIT = 3
+PLOT_X_LIMIT = 10
+PLOT_Y_LIMIT = 10
 
 # filename suffix
 suffix = ""
