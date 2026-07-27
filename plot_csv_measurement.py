@@ -20,8 +20,8 @@ from detect_moving_object import detect_danger
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 measurement_dir = os.path.join(BASE_DIR, "measurements")
 
-filepath_xy = os.path.join(measurement_dir, "06062026_scan_xy_test_street.csv")
-filepath_ego_velocity = os.path.join(measurement_dir, "06062026_ego_velocity_test_street.csv")
+filepath_xy = os.path.join(measurement_dir, "21072026_scan_xy_testdistance10meters.csv")
+filepath_ego_velocity = os.path.join(measurement_dir, "21072026_ego_velocity_testdistance10meters.csv")
 
 def load_xy_scans(filepath, points_per_scan=421):
 
