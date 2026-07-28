@@ -10,17 +10,16 @@ import matplotlib.pyplot as plt
 import configurations as config
 from data_acquisition import LidarReader
 from lidar_thread import LidarThread
-from get_velocities import get_x_y_velocities
-from save_measurement import save_ego_velocity
 from filename_handler import create_filename
-from detect_moving_object import detect_danger
+from compute_ego_velocity import compute_ego_velocity
 from extract_points_in_critical_area import extract_points_in_critical_area
-from clustering import cluster_segments
+from clustering import find_segments
 from clustering import merge_segments_into_clusters
 from tracking import track_clusters
 from tracking import set_default_id
-from plot_clusters import plot_clusters
 from detect_moving_object import detect_danger
+from plot_clusters import plot_clusters
+from save_measurement import save_ego_velocity
 
 # global variable to control the flow of the program
 running = True
@@ -67,8 +66,7 @@ def main():
             t_log = scan["t_log"]
             num_scan = scan["scan_number"]
          
-        # store the first parameter of the scan
-        previousUsTimestamp = None       
+        # store the first parameter of the scan    
         previous_x_values = x.copy()
         previous_y_values = y.copy()
         previous_timestamp = timestamp
@@ -85,7 +83,7 @@ def main():
         critical_x_previous, critical_y_previous = extract_points_in_critical_area(previous_x_values, previous_y_values)
         
         # look for segments in the critical area based on the distances between points
-        segments_previous_scan = cluster_segments(critical_x_previous, critical_y_previous, num_scan)
+        segments_previous_scan = find_segments(critical_x_previous, critical_y_previous, num_scan)
         
         # build clusters out of segments that belong togather 
         clusters_previous_scan = merge_segments_into_clusters(segments_previous_scan)
@@ -93,6 +91,7 @@ def main():
         # initialize empty directories to store multiple scans
         clusters_two_scans_ago = []
         clusters_three_scans_ago = []
+        danger = [] # empty for the first three scans
         
         # give the first scan clusters id's as reference 
         next_id = 1
@@ -111,7 +110,7 @@ def main():
         sc.set_color(colors)                                            
 
         while running:
-            
+ 
             # store the next scan and extract the informatoin
             scan = lidar_thread.latest_scan
             
@@ -119,37 +118,14 @@ def main():
                 continue
             
             r = scan["r"]
-            x = scan["x"]
-            y = scan["y"]
+            current_x = scan["x"]
+            current_y = scan["y"]
             timestamp = scan["timestamp"]
             t_log = scan["t_log"]
             scan_num_current = scan["scan_number"]
-            
+            print(scan_num_current)
             if timestamp <= previous_timestamp:
                 continue
-            
-            current_x = x
-            current_y = y
-            
-            # in order to track clusters, process the scans incoming: 1. extract points in area close to sensor 
-            critical_x_current, critical_y_current = extract_points_in_critical_area(current_x, current_y)
-            
-            # build segments out of neighbouring points
-            segments_current_scan = cluster_segments(critical_x_current, critical_y_current, scan_num_current)
-            
-            # merge segments close to each other into clusters
-            clusters_current_scan = merge_segments_into_clusters(segments_current_scan)
-            
-            # start tracking after the minimum number of 4 stored scans, otherwise get/store next ones and set default cluster_id's 
-            if gotFourScans:
-                clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
-                                                                        clusters_two_scans_ago,
-                                                                        clusters_previous_scan,
-                                                                        clusters_current_scan, 
-                                                                        next_id)
-            else:
-                clusters_current_scan_tracked = clusters_current_scan
-                next_id = set_default_id(clusters_current_scan_tracked, next_id)
             
             # calculate the time in between scans
             dt = (timestamp - previous_timestamp) / 1e6
@@ -157,42 +133,50 @@ def main():
             if dt <= 0:
                 continue
             
-            # compute the velocity 
-            vx, vy, v = get_x_y_velocities(previous_x_values, current_x, previous_y_values, current_y, dt, timestamp)
+            # compute the velocities, take the median for ego velocity estimation and apply filter 
+            ego_velocity_estimation = compute_ego_velocity(previous_median, previous_x_values, current_x, previous_y_values, current_y, dt, timestamp, alpha, beta)
             
-            # use only the values for the right side of sensor for median 
-            v_right = v[0:212]
-            r_right = r[0:212]
-   
-            # get the median value for velocity at the right side of the sensor where cars overtake
-            current_median_right_area = np.nanmedian(v_right)
-            
-            if np.isnan(current_median_right_area):
-               current_median_right_area = previous_median
-               
-            # filter the velocity median values and store the estimated velocites in a csv file
-            ego_velocity_estimation = alpha * current_median_right_area + beta * previous_median  
+            # store the values in a file 
             save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation) 
-
-            # danger detection 
+             
+            # in order to track clusters, process the scans incoming: 1. extract points in area close to sensor 
+            critical_x_current, critical_y_current = extract_points_in_critical_area(current_x, current_y)
+            
+            # build segments out of neighbouring points
+            segments_current_scan = find_segments(critical_x_current, critical_y_current, scan_num_current)
+            
+            # merge segments close to each other into clusters
+            clusters_current_scan = merge_segments_into_clusters(segments_current_scan)
+            
+            # start tracking after the minimum number of 4 stored scans, otherwise get/store next ones and set default cluster_id's 
             if gotFourScans:
+                # start tracking
+                clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
+                                                                        clusters_two_scans_ago,
+                                                                        clusters_previous_scan,
+                                                                        clusters_current_scan, 
+                                                                        next_id)
+                # danger detection                                                        
                 danger = detect_danger(ego_velocity_estimation, 
-                                        num_scan,
-                                        clusters_current_scan_tracked,
-                                        clusters_previous_scan,
-                                        clusters_two_scans_ago,
-                                        clusters_three_scans_ago)
+                        num_scan,
+                        clusters_current_scan_tracked,
+                        clusters_previous_scan,
+                        clusters_two_scans_ago,
+                        clusters_three_scans_ago)
+            
             else:
-                danger = []
+                # simply save as tracked until the first four scans are stored 
+                clusters_current_scan_tracked = clusters_current_scan
+                next_id = set_default_id(clusters_current_scan_tracked, next_id)   
             
             # plot the measurement
-            plot_clusters(ax, x, y, clusters_current_scan_tracked, danger, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
+            plot_clusters(ax, current_x, current_y, clusters_current_scan_tracked, danger, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
             
             # pause in between scans for animation effect
             plt.pause(0.001)
     
             # store current values as previous for the next round of loop 
-            previous_x_values = current_x.copy()
+            previous_x_values = current_x.copy() 
             previous_y_values = current_y.copy()
             previous_timestamp = timestamp
             previous_median = ego_velocity_estimation

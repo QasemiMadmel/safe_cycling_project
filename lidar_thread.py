@@ -1,9 +1,7 @@
 # lidar_thread.py
 
 import threading
-
 from data_acquisition import LidarReader
-
 
 class LidarThread(threading.Thread):
 

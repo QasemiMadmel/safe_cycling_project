@@ -34,7 +34,7 @@ def update_cluster_properties(cluster):
     cluster["length"] = len(cluster["x"])
 
 
-def cluster_segments(x, y, num_scan):
+def find_segments(x, y, num_scan):
 
     upper_threshold = 0.5
     lower_threshold = 0.005
