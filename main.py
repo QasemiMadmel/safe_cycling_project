@@ -112,7 +112,8 @@ def main():
         while running:
  
             # store the next scan and extract the informatoin
-            scan = lidar_thread.latest_scan
+            with lidar_thread.lock:
+                scan = lidar_thread.latest_scan
             
             if scan is None: 
                 continue

@@ -18,6 +18,10 @@ class LidarThread(threading.Thread):
 
         # latest scan storage
         self.latest_scan = None
+        
+        # locking the thread to avoid racing conditions
+        self.lock = threading.Lock()
+        
 
     def run(self):
 
@@ -29,7 +33,7 @@ class LidarThread(threading.Thread):
                 r, x, y, t_log, timestamp, scan_number = self.lidar.getScan()
 
                 # store latest scan
-                self.latest_scan = {
+                new_scan = {
                     "r": r,
                     "x": x,
                     "y": y,
@@ -37,10 +41,14 @@ class LidarThread(threading.Thread):
                     "timestamp": timestamp,
                     "scan_number": scan_number
                 }
+                
+                with self.lock:
+                    self.latest_scan = new_scan
 
             except Exception as e:
 
                 print(f"LidarThread Error: {e}")
+                time.sleep(0.1)
 
     def stop(self):
 
