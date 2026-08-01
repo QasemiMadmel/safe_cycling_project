@@ -18,10 +18,9 @@ def detect_danger(ego_velocity,
                 clusters_two_scans_ago,
                 clusters_three_scans_ago):
 
-    ego_velocity_threshold_side = 3 # about 11 km/h
-    ego_velocity_threshold_back = 5 # about 18 km/h
-    threshold_distance_to_sensor_side = 2.0
-    threshold_distance_to_sensor_back = 3.0
+
+    ego_velocity_threshold = 5 # about 18 km/h
+    threshold_distance_to_sensor = 3.0
 
     dangerous_clusters = []
 
@@ -29,11 +28,12 @@ def detect_danger(ego_velocity,
 
         x_mean = current_cluster["center"]["x"]
         y_mean = current_cluster["center"]["y"]
-
+        
         is_side = (
             0.2 < x_mean < 3 and
-            0.2 < y_mean < 2
+            0.2 < y_mean < 5
         )
+
         
         is_back = (
             -0.5 < x_mean < 1.5 and
@@ -47,11 +47,11 @@ def detect_danger(ego_velocity,
         
         if is_side:
             
-            if ego_velocity > ego_velocity_threshold_side:
+            if ego_velocity > ego_velocity_threshold:
             
                 distance_to_sensor = (current_cluster["center"]["distance_mean_origin"])
 
-                if distance_to_sensor > threshold_distance_to_sensor_side:
+                if distance_to_sensor > threshold_distance_to_sensor:
                     continue
 
                 direction = []
@@ -90,7 +90,7 @@ def detect_danger(ego_velocity,
                     dangerous_clusters.append(danger)
         elif is_back: 
             
-            if ego_velocity > ego_velocity_threshold_back:
+            if ego_velocity > ego_velocity_threshold:
                 
                 distance_to_sensor = (current_cluster["center"]["distance_mean_origin"])
 

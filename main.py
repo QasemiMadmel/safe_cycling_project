@@ -12,12 +12,13 @@ from data_acquisition import LidarReader
 from lidar_thread import LidarThread
 from filename_handler import create_filename
 from compute_ego_velocity import compute_ego_velocity
+from compute_ego_acceleration import compute_ego_acceleration
 from extract_points_in_critical_area import extract_points_in_critical_area
 from clustering import find_segments
 from clustering import merge_segments_into_clusters
 from tracking import track_clusters
 from tracking import set_default_id
-from detect_moving_object import detect_danger
+from detect_danger import detect_danger
 from plot_clusters import plot_clusters
 from save_measurement import save_ego_velocity
 
@@ -56,7 +57,6 @@ def main():
             
         # store the first scan
         scan = lidar_thread.latest_scan
-          
         # extract data from scan
         if scan is not None:
             r = scan["r"]
@@ -65,6 +65,9 @@ def main():
             timestamp = scan["timestamp"]
             t_log = scan["t_log"]
             num_scan = scan["scan_number"]
+            scan["ego_velocity"] = None
+            scan["ego_acceleration"] = None
+            previous_ego_velocity = None 
          
         # store the first parameter of the scan    
         previous_x_values = x.copy()
@@ -111,7 +114,7 @@ def main():
 
         while running:
  
-            # store the next scan and extract the informatoin
+            # store the next scan and extract the informatoin after it is available
             with lidar_thread.lock:
                 scan = lidar_thread.latest_scan
             
@@ -124,7 +127,7 @@ def main():
             timestamp = scan["timestamp"]
             t_log = scan["t_log"]
             scan_num_current = scan["scan_number"]
-            print(scan_num_current)
+
             if timestamp <= previous_timestamp:
                 continue
             
@@ -136,6 +139,12 @@ def main():
             
             # compute the velocities, take the median for ego velocity estimation and apply filter 
             ego_velocity_estimation = compute_ego_velocity(previous_median, previous_x_values, current_x, previous_y_values, current_y, dt, timestamp, alpha, beta)
+            scan["ego_velocity"] = ego_velocity_estimation
+            
+            ego_acceleration = compute_ego_acceleration(previous_ego_velocity, ego_velocity_estimation, dt)
+            scan["ego_acceleration"] = ego_acceleration
+            
+            previous_ego_velocity = ego_velocity_estimation
             
             # store the values in a file 
             save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation) 
@@ -151,6 +160,7 @@ def main():
             
             # start tracking after the minimum number of 4 stored scans, otherwise get/store next ones and set default cluster_id's 
             if gotFourScans:
+
                 # start tracking
                 clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
                                                                         clusters_two_scans_ago,

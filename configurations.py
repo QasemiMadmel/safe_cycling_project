@@ -3,7 +3,7 @@
 # ipv4
 HOST_1 = "192.168.0.2" # sensor 1 
 HOST_2 = "192.168.0.3" # sensor 2
-HOST = HOST_1 
+HOST = HOST_2 
 
 # 2112:(Cola-Binary), 2111:(Cola-ASCII) 
 # choose the port for communication
