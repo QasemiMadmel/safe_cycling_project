@@ -18,7 +18,7 @@ from clustering import find_segments
 from clustering import merge_segments_into_clusters
 from tracking import track_clusters
 from tracking import set_default_id
-from detect_danger import detect_danger
+from detect_danger import distiguish_scenario_and_detect_danger
 from plot_clusters import plot_clusters
 from save_measurement import save_ego_velocity
 
@@ -65,9 +65,12 @@ def main():
             timestamp = scan["timestamp"]
             t_log = scan["t_log"]
             num_scan = scan["scan_number"]
+            
             scan["ego_velocity"] = None
             scan["ego_acceleration"] = None
-            previous_ego_velocity = None 
+            
+            previous_ego_velocity = 0 
+            
          
         # store the first parameter of the scan    
         previous_x_values = x.copy()
@@ -120,7 +123,7 @@ def main():
             
             if scan is None: 
                 continue
-            
+
             r = scan["r"]
             current_x = scan["x"]
             current_y = scan["y"]
@@ -166,10 +169,11 @@ def main():
                                                                         clusters_two_scans_ago,
                                                                         clusters_previous_scan,
                                                                         clusters_current_scan, 
-                                                                        next_id)
+                                                                        next_id,
+                                                                        dt)
                 # danger detection                                                        
-                danger = detect_danger(ego_velocity_estimation, 
-                        num_scan,
+                danger = distiguish_scenario_and_detect_danger(ego_velocity_estimation, 
+                        scan_num_current,
                         clusters_current_scan_tracked,
                         clusters_previous_scan,
                         clusters_two_scans_ago,

@@ -2,22 +2,31 @@
 
 import numpy as np
 
-def determine_direction(cluster, dy):
-        
+def determine_cluster_direction(cluster, dy):
         if (dy < 0):
                 cluster["approaching"] = True
         else: 
                 cluster["approaching"] = False
-                
+   
+   
+def determine_longitudinal_speed(distance_dy, dt):
+	if distance_dy is None or dt <= 0: 
+            return 0
+	else:
+            cluster_velocity = distance_dy / dt
+            return cluster_velocity  
+                 
 def track_clusters(
         three_scans_ago,
         two_scans_ago,
         previous_scan,
         current_scan,
-        next_id):
+        next_id,
+        dt):
 
 	# threshold for distance of same clusters in two different scans 
-    threshold = 0.8
+    distance_threshold_scan_before = 0.8
+    distance_threshold_between_more_scanes = 1
 
 	# go over the curent scan clusters
     for current_cluster in current_scan:
@@ -47,13 +56,13 @@ def track_clusters(
                 closest_id = old_cluster["id"]
 		
         # is the cluster with the lowest distance within the threshold range? if yes, the cluster is tracked
-        if closest_distance < threshold:
+        if closest_distance < distance_threshold_scan_before:
 
             current_cluster["id"] = closest_id
-            determine_direction(current_cluster, closest_dy)
+            determine_cluster_direction(current_cluster, closest_dy)
+            current_cluster["speed"] = determine_longitudinal_speed(abs(closest_dy), dt)
             cluster_matched = True
             
-
 		# otherwise look for a match in two or three scans earlier and apply the same logic
         
 		#
@@ -77,10 +86,11 @@ def track_clusters(
                     closest_dy = dy
                     closest_id = old_cluster["id"]
 
-            if closest_distance < threshold:
+            if closest_distance < distance_threshold_between_more_scanes:
 
                 current_cluster["id"] = closest_id
-                determine_direction(current_cluster, closest_dy)
+                determine_cluster_direction(current_cluster, closest_dy)
+                current_cluster["speed"] = determine_longitudinal_speed(abs(closest_dy), dt*2)
                 cluster_matched = True
 
         #
@@ -104,10 +114,11 @@ def track_clusters(
                     closest_dy = dy
                     closest_id = old_cluster["id"]
 
-            if closest_distance < threshold:
+            if closest_distance < distance_threshold_between_more_scanes:
 
                 current_cluster["id"] = closest_id
-                determine_direction(current_cluster, closest_dy)
+                determine_cluster_direction(current_cluster, closest_dy)
+                current_cluster["speed"] = determine_longitudinal_speed(abs(closest_dy), dt*3)
                 cluster_matched = True
 
 
@@ -117,10 +128,10 @@ def track_clusters(
         if not cluster_matched:
 
             current_cluster["id"] = next_id
-            current_cluster["approaching"] = None 
+            current_cluster["approaching"] = False 
+            current_cluster["speed"] = 0
             next_id += 1
             
-
     return current_scan, next_id
 
 # to set default id's for clusters of the first four scans 
@@ -128,7 +139,8 @@ def set_default_id(scan, next_id):
         
 	for cluster in scan: 
                 cluster["id"] = next_id
-                cluster["approaching"] = None
+                cluster["approaching"] = False
+                cluster["speed"] = 0
                 next_id += 1
 	    
 	return next_id

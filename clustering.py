@@ -27,11 +27,9 @@ def update_cluster_properties(cluster):
 
     cluster["center"]["x"] = mean_x
     cluster["center"]["y"] = mean_y
-    cluster["center"]["distance_mean_origin"] = np.sqrt(
-        mean_x**2 + mean_y**2
-    )
-
+    cluster["center"]["distance_mean_origin"] = np.sqrt(mean_x**2 + mean_y**2)
     cluster["length"] = len(cluster["x"])
+    cluster["speed"] = 0
 
 
 def find_segments(x, y, num_scan):
