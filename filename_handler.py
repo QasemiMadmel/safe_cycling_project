@@ -18,3 +18,10 @@ def create_filename(base_dir, base_name, suffix):
     
     # return the full path for the file 
     return os.path.join(base_dir, "measurements", filename)
+
+def create_filename_for_playbacks(base_dir, base_name, suffix, date_as_string): 
+    
+    filename = f"{date_as_string}_{base_name}_{suffix}.csv"
+    
+    return os.path.join(base_dir, "measurements", filename)
+    

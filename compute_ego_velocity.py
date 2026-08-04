@@ -10,9 +10,13 @@ def compute_ego_velocity(previous_median, previous_x_values, current_x, previous
 	
 	# use only the values for the right side of sensor for median 
 	v_right = v[0:212]
+	valid_v_right = v_right[np.isfinite(v_right)]
 
 	# get the median value for velocity at the right side of the sensor where cars overtake
-	current_median_right_area = np.nanmedian(v_right)
+	if valid_v_right.size > 0:
+		current_median_right_area = np.nanmedian(valid_v_right)
+	else: 
+		current_median_right_area = np.nan
 	
 	if np.isnan(current_median_right_area):
 	   current_median_right_area = previous_median

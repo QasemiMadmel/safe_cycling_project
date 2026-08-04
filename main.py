@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import time
+import threading
 import numpy as np
 import traceback
 import matplotlib.pyplot as plt
@@ -19,8 +20,11 @@ from clustering import merge_segments_into_clusters
 from tracking import track_clusters
 from tracking import set_default_id
 from detect_danger import distiguish_scenario_and_detect_danger
+from issue_warning import issue_warning
 from plot_clusters import plot_clusters
 from save_measurement import save_ego_velocity
+from save_measurement import save_dangerous_events
+
 
 # global variable to control the flow of the program
 running = True
@@ -28,6 +32,7 @@ running = True
 # find the directory of the project and create filepath to store results of ego-velocity estimations
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 filepath_ego_velocity = create_filename(BASE_DIR, "ego_velocity", config.suffix)
+filepath_dangerous_events_live_measurement = create_filename(BASE_DIR, "danger_detected", config.suffix)
 
 # function to stop measurement on "control+c"
 def stop_handler(signum, frame):
@@ -38,20 +43,31 @@ def stop_handler(signum, frame):
 
 def main():
     
+    start_time = time.monotonic()
     global running
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
     
     # initialization of a thread that handles data acquistion 
     lidar_thread = None
-
+    
+    # creating an event object 
+    danger_event = threading.Event()
+    stop_event = threading.Event()
+    
+    # an extra thread get the task to issue a warning and sets the predefined events 
+    warning_thread = threading.Thread(target=issue_warning,args=(danger_event, stop_event), name="Warning_Thread")
+ 
     try:
         
         # create a lidarThread object and start thread to start the measurement
         lidar_thread = LidarThread()
         lidar_thread.start()
         
-        # waite for data to sette (15 Hz: 0.066s)
+        # start the second thread that sets danger_event and stops it based on the results from processing 
+        warning_thread.start()
+        
+        # waite for data (15 Hz: 0.066s)
         while lidar_thread.latest_scan is None: 
             time.sleep(0.01)
             
@@ -99,7 +115,7 @@ def main():
         clusters_three_scans_ago = []
         danger = [] # empty for the first three scans
         
-        # give the first scan clusters id's as reference 
+        # give the first three scan-clusters id's as reference 
         next_id = 1
         for cluster in clusters_previous_scan:
             cluster["id"] = next_id
@@ -178,9 +194,12 @@ def main():
                         clusters_previous_scan,
                         clusters_two_scans_ago,
                         clusters_three_scans_ago)
+                if danger:
+                    danger_event.set() # sets an event that triggers warning if a dangerous event occurs
+                    save_dangerous_events(filepath_dangerous_events_live_measurement, danger)
             
             else:
-                # simply save as tracked until the first four scans are stored 
+                # simply save scan as tracked until the first four scans are stored 
                 clusters_current_scan_tracked = clusters_current_scan
                 next_id = set_default_id(clusters_current_scan_tracked, next_id)   
             
@@ -214,10 +233,25 @@ def main():
         traceback.print_exc()
 
     finally:
+        
+        end_time = time.monotonic()
+        measurement_duration = end_time - start_time
+        print("Measurement duration in seconds: " ,measurement_duration)
+        
+        stop_event.set() # ends the waiting condition of warning thread
+        
+        # wakes the thread that is waiting (danger_event.wait()) to verify wethear stop_event is set
+        danger_event.set()  
+        
+        if warning_thread.is_alive():
+            warning_thread.join(timeout=2.0)
+            
         print("Cleaning up and exiting...")
+        
         if lidar_thread is not None: 
             lidar_thread.stop()
             lidar_thread.join(timeout=1)
+        
         plt.close('all')
         sys.exit(0)
 

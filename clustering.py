@@ -1,6 +1,9 @@
+# clustering.py
+
 import numpy as np
 
 
+# creates default segment
 def create_empty_segment(num_scan):
     return {
         "num_scan": num_scan,
@@ -12,12 +15,12 @@ def create_empty_segment(num_scan):
             "y": None,
             "distance_mean_origin": None
         },
-        "moves_toward_sensor": None,
         "length": 0
     }
 
 
-def update_cluster_properties(cluster):
+# adds mean value and the distance to a segment or cluster 
+def update_segment_properties(cluster):
 
     if len(cluster["x"]) == 0:
         return
@@ -32,6 +35,7 @@ def update_cluster_properties(cluster):
     cluster["speed"] = 0
 
 
+# search for segments in a single scan based on distances in between points 
 def find_segments(x, y, num_scan):
 
     upper_threshold = 0.5
@@ -62,19 +66,20 @@ def find_segments(x, y, num_scan):
         else:
 
             if segment_started:
-                update_cluster_properties(current_segment)
+                update_segment_properties(current_segment)
                 segments.append(current_segment)
                 current_segment = create_empty_segment(num_scan)
                 segment_started = False
 
     if segment_started:
 
-        update_cluster_properties(current_segment)
+        update_segment_properties(current_segment)
         segments.append(current_segment)
 
     return segments
 
 
+# if segments are close to each other, then they probably belong to the same cluster: merging function
 def merge_segments_into_clusters(segments):
 
     threshold_x = 0.5
@@ -108,7 +113,7 @@ def merge_segments_into_clusters(segments):
 
                 current_segment["x"].extend(segments[k]["x"])
                 current_segment["y"].extend(segments[k]["y"])
-                update_cluster_properties(current_segment)
+                update_segment_properties(current_segment)
 
                 used[k] = True
 

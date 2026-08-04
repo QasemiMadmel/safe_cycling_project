@@ -8,6 +8,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 import configurations as config
+from filename_handler import create_filename_for_playbacks
 from extract_points_in_critical_area import extract_points_in_critical_area
 from clustering import find_segments
 from clustering import merge_segments_into_clusters
@@ -15,13 +16,15 @@ from tracking import track_clusters
 from tracking import set_default_id
 from plot_clusters import plot_clusters
 from detect_danger import distiguish_scenario_and_detect_danger
+from save_measurement import save_dangerous_events
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 measurement_dir = os.path.join(BASE_DIR, "measurements")
 
-filepath_xy = os.path.join(measurement_dir, "06062026_scan_xy_test_parking.csv")
-filepath_ego_velocity = os.path.join(measurement_dir, "06062026_ego_velocity_test_parking.csv")
+filepath_xy = os.path.join(measurement_dir, "25052026_scan_xy_test_street_3.csv")
+filepath_ego_velocity = os.path.join(measurement_dir, "25052026_median_and_ego_velocity_test_street_3.csv")
+filepath_dangerous_events_playback = create_filename_for_playbacks(BASE_DIR, "dangerous_events_in_playback", "street_3", "25052026")
 
 def load_xy_scans(filepath, points_per_scan=421):
 
@@ -166,12 +169,7 @@ def playback_lidar_with_tracking():
             )
 
             if len(danger) > 0:
-
-                print(
-                    f"Danger detected!"
-                    f"(scan {num_scan})"
-                )
-
+                save_dangerous_events(filepath_dangerous_events_playback, danger)
         else:
 
             danger = []

@@ -2,20 +2,36 @@
 
 import numpy as np
 
+
+# to determine wethear the cluster is moving toward the sensor or away from it   
 def determine_cluster_direction(cluster, dy):
         if (dy < 0):
                 cluster["approaching"] = True
         else: 
                 cluster["approaching"] = False
+ 
    
-   
+# how fast is the cluster moving
 def determine_longitudinal_speed(distance_dy, dt):
 	if distance_dy is None or dt <= 0: 
             return 0
 	else:
             cluster_velocity = distance_dy / dt
             return cluster_velocity  
-                 
+
+
+# to set default id's for clusters of the first four scans 
+def set_default_id(scan, next_id):
+        
+	for cluster in scan: 
+                cluster["id"] = next_id
+                cluster["approaching"] = False
+                cluster["speed"] = 0
+                next_id += 1
+                
+	return next_id
+
+# track based on distances in between clusters in subsequent scans         
 def track_clusters(
         three_scans_ago,
         two_scans_ago,
@@ -134,15 +150,6 @@ def track_clusters(
             
     return current_scan, next_id
 
-# to set default id's for clusters of the first four scans 
-def set_default_id(scan, next_id):
-        
-	for cluster in scan: 
-                cluster["id"] = next_id
-                cluster["approaching"] = False
-                cluster["speed"] = 0
-                next_id += 1
-	    
-	return next_id
+
 
 
