@@ -14,6 +14,7 @@ from lidar_thread import LidarThread
 from filename_handler import create_filename
 from compute_ego_velocity import compute_ego_velocity
 from compute_ego_acceleration import compute_ego_acceleration
+from verify_braking import verify_braking
 from extract_points_in_critical_area import extract_points_in_critical_area
 from clustering import find_segments
 from clustering import merge_segments_into_clusters
@@ -85,7 +86,7 @@ def main():
             scan["ego_velocity"] = None
             scan["ego_acceleration"] = None
             
-            previous_ego_velocity = 0 
+            previous_ego_velocity = None 
             
          
         # store the first parameter of the scan    
@@ -114,6 +115,10 @@ def main():
         clusters_two_scans_ago = []
         clusters_three_scans_ago = []
         danger = [] # empty for the first three scans
+        
+        # keep track of the ego acceleration
+        ego_acceleration_list = []
+        braking_condition = False
         
         # give the first three scan-clusters id's as reference 
         next_id = 1
@@ -159,11 +164,17 @@ def main():
             # compute the velocities, take the median for ego velocity estimation and apply filter 
             ego_velocity_estimation = compute_ego_velocity(previous_median, previous_x_values, current_x, previous_y_values, current_y, dt, timestamp, alpha, beta)
             scan["ego_velocity"] = ego_velocity_estimation
-            
-            ego_acceleration = compute_ego_acceleration(previous_ego_velocity, ego_velocity_estimation, dt)
-            scan["ego_acceleration"] = ego_acceleration
-            
             previous_ego_velocity = ego_velocity_estimation
+            
+            if previous_ego_velocity is None:
+                ego_acceleration = None
+                braking_condition = False
+
+            else:
+                ego_acceleration = compute_ego_acceleration(previous_ego_velocity, ego_velocity_estimation, dt)
+                ego_acceleration_list, braking_condition = verify_braking(ego_acceleration_list, ego_acceleration)
+            
+            scan["ego_acceleration"] = ego_acceleration
             
             # store the values in a file 
             save_ego_velocity(filepath_ego_velocity, timestamp, ego_velocity_estimation) 
@@ -179,7 +190,6 @@ def main():
             
             # start tracking after the minimum number of 4 stored scans, otherwise get/store next ones and set default cluster_id's 
             if gotFourScans:
-
                 # start tracking
                 clusters_current_scan_tracked, next_id = track_clusters(clusters_three_scans_ago,
                                                                         clusters_two_scans_ago,
@@ -193,7 +203,9 @@ def main():
                         clusters_current_scan_tracked,
                         clusters_previous_scan,
                         clusters_two_scans_ago,
-                        clusters_three_scans_ago)
+                        clusters_three_scans_ago, 
+                        braking_condition, 
+                        ego_acceleration)
                 if danger:
                     danger_event.set() # sets an event that triggers warning if a dangerous event occurs
                     save_dangerous_events(filepath_dangerous_events_live_measurement, danger)

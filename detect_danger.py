@@ -12,6 +12,27 @@ def find_cluster_by_id(clusters, cluster_id):
 
     return None
 
+# compute new threshold based on decceleration for tailgating scenario
+def compute_new_threshold_distance_tailgating(ego_velocity, ego_acceleration, cluster_speed): 
+    
+    absolute_minimal_distance = 5
+    
+    if ego_velocity is not None and ego_acceleration is not None and cluster_speed is not None: 
+        assumed_car_deceleration = 7.0
+        assumed_cyclist_deceleration = 2.5
+        car_speed = ego_velocity+cluster_speed
+        cyclist_deceleration = max(assumed_cyclist_deceleration, abs(ego_acceleration))
+            
+        reaction_distance = car_speed * 1 
+        relative_braking_distance = car_speed**2/(2*assumed_car_deceleration) - ego_velocity**2/(2*cyclist_deceleration)
+        residual_distance = 1
+        
+        braking_distance = reaction_distance + relative_braking_distance + residual_distance
+        resulting_braking_distance = max(absolute_minimal_distance, braking_distance)
+    else:
+         resulting_braking_distance = 10
+    
+    return resulting_braking_distance
 
 # the majority of information about the tracked clusters direction determine the final direction of movement 
 def moves_in_sensor_direction(clusters_in_previous_scan,
@@ -49,7 +70,9 @@ def distiguish_scenario_and_detect_danger(ego_velocity,
                 clusters_in_current_scan,
                 clusters_in_previous_scan,
                 clusters_two_scans_ago,
-                clusters_three_scans_ago):
+                clusters_three_scans_ago,
+                cyclist_is_braking, 
+                ego_acceleration):
 
     # thresholds for velocities and distances  
     ego_velocity_threshold = 0.6 # ~2[km/h]
@@ -88,10 +111,12 @@ def distiguish_scenario_and_detect_danger(ego_velocity,
                 # which scenario -> overtaking or tailgating? 
                 if (minimal_distance_dx < distance_to_distinguish_scenarios 
                     or corresponding_dx_to_minimal_ditance_from_y < distance_to_distinguish_scenarios): 
-
-                    # tailgating scenario and the car s already too close to sensor
-                    if minimal_distance_y < absolute_minimal_distance_for_tailgating: 
-                        # store in danger 
+                    # tailgating scenario 
+                    # is the cyclist decelarating?
+                    if cyclist_is_braking:
+                        adapted_threshold =compute_new_threshold_distance_tailgating(ego_velocity, ego_acceleration, cluster_speed)
+                        if minimal_distance_y < adapted_threshold: 
+                            # store in danger 
                             danger = {"scan_number": scan_number,
                                     "cluster_id": cluster_id,
                                     "distance_sensor_longitudinal": minimal_distance_y,
@@ -100,6 +125,17 @@ def distiguish_scenario_and_detect_danger(ego_velocity,
                                     "cluster_speed": cluster_speed,
                                     "scenario": "tailgating"}
                             dangerous_clusters.append(danger)
+                        else:
+                            if minimal_distance_y < absolute_minimal_distance_for_tailgating: 
+                            # store in danger 
+                                danger = {"scan_number": scan_number,
+                                        "cluster_id": cluster_id,
+                                        "distance_sensor_longitudinal": minimal_distance_y,
+                                        "distance_sensor_lateral_dx": minimal_distance_dx,
+                                        "ego_velocity": ego_velocity,
+                                        "cluster_speed": cluster_speed,
+                                        "scenario": "tailgating"}
+                                dangerous_clusters.append(danger)
                         
                 # if the car is trying to overtake and has insufficeint lateral distance
                 elif (minimal_distance_dx < lateral_distance_to_sensor_threshold
