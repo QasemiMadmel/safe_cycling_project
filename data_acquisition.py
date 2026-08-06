@@ -14,7 +14,7 @@ from filename_handler import create_filename, get_common_suffix
 # data storage in measurement directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if os.getenv("WEB_START") == "1":
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.datetime.now().strftime("%H%M%S")
         config.suffix = f"recording_{timestamp}"
 else:
         config.suffix = get_common_suffix()
