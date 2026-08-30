@@ -34,19 +34,19 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 
 filepath_xy = os.path.join(
     measurement_dir,
-    "08082026_scan_xy_recording_123125.csv"
+    "30082026_scan_xy_recording_233639.csv"
 )
 
 filepath_ego_velocity = os.path.join(
     measurement_dir,
-    "08082026_ego_velocity_recording_123125.csv"
+    "30082026_velocities_x_y_recording_233639.csv"
 )
 
 filepath_dangerous_events_playback = create_filename_for_playbacks(
     BASE_DIR,
     "danger_event_in_playback_test",
     "recording",
-    "08082026_123125"
+    "30082026_233639"
 )
 
 

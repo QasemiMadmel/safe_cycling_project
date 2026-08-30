@@ -9,6 +9,7 @@ import numpy as np
 import traceback
 import matplotlib.pyplot as plt
 import configurations as config
+from cleanup_old_measurements import cleanup_old_measurements
 from data_acquisition import LidarReader
 from lidar_thread import LidarThread
 from filename_handler import create_filename
@@ -31,10 +32,10 @@ from save_measurement import save_dangerous_events
 # global variable to control the flow of the program
 running = True
 
-# find the directory of the project and create filepath to store results of ego-velocity estimations
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-filepath_ego_velocity = create_filename(BASE_DIR, "ego_velocity", config.suffix)
-filepath_dangerous_events_live_measurement = create_filename(BASE_DIR, "danger_detected", config.suffix)
+MEASUREMENT_DIR = os.path.join(BASE_DIR, "measurements")
+
+MAX_MEASUREMENT_FILES = 50*4 # Maximum amount of 200 files (50 measurements are kept in the measurement directory)
 
 # function to stop measurement on "control+c"
 def stop_handler(signum, frame):
@@ -46,10 +47,18 @@ def stop_handler(signum, frame):
 def main():
     
     start_time = time.monotonic()
+
     global running
+
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
-    
+
+    cleanup_old_measurements(MEASUREMENT_DIR, MAX_MEASUREMENT_FILES)
+    # create filepath to store results of ego-velocity estimations
+
+    filepath_ego_velocity = create_filename(BASE_DIR, "ego_velocity", config.suffix)
+    filepath_dangerous_events_live_measurement = create_filename(BASE_DIR, "danger_detected", config.suffix)
+
     # initialization of a thread that handles data acquistion 
     lidar_thread = None
     
