@@ -1,5 +1,3 @@
-# issue_warning.py
-
 import json
 import os
 import time
@@ -8,10 +6,15 @@ import threading
 from gpiozero import DigitalOutputDevice
 
 
-WARNING_GPIO_PIN = 17  # physical pin 11
-WARNING_DURATION = 1.0
+WARNING_GPIO_PIN = 17
+SAFE_GPIO_PIN = 27
 
-DANGER_STATUS_FILE = ("/home/strawberry/safe_cycling_project/runtime/danger_status.json")
+WARNING_DURATION = 2.0
+SWITCH_DELAY = 0.02
+
+DANGER_STATUS_FILE = (
+    "/home/strawberry/safe_cycling_project/runtime/danger_status.json"
+)
 
 
 def write_danger_status(danger_active: bool) -> None:
@@ -24,6 +27,7 @@ def write_danger_status(danger_active: bool) -> None:
             "w",
             encoding="utf-8"
         ) as file:
+
             json.dump(
                 {"danger": danger_active},
                 file
@@ -60,13 +64,25 @@ def issue_warning(
         initial_value=False
     )
 
+    safe_output = DigitalOutputDevice(
+        SAFE_GPIO_PIN,
+        active_high=True,
+        initial_value=False
+    )
+
+    warning_output.off()
+    safe_output.on()
+
+    print("STATE: SAFE -> green ON, red OFF")
+
     write_danger_status(False)
 
     try:
         while not stop_event.is_set():
 
-            # Regular timeout allows the thread to notice stop_event.
-            danger_detected = danger_event.wait(timeout=0.1)
+            danger_detected = danger_event.wait(
+                timeout=0.1
+            )
 
             if stop_event.is_set():
                 break
@@ -76,15 +92,20 @@ def issue_warning(
 
             danger_event.clear()
 
+            safe_output.off()
+
+            time.sleep(SWITCH_DELAY)
+
             warning_output.on()
+
+            print("STATE: DANGER -> green OFF, red ON")
+
             write_danger_status(True)
 
             warning_until = (
                 time.monotonic()
                 + WARNING_DURATION
             )
-
-            print("danger occurred")
 
             while not stop_event.is_set():
 
@@ -97,28 +118,44 @@ def issue_warning(
                     break
 
                 new_danger = danger_event.wait(
-                    timeout=min(remaining_time, 0.1)
+                    timeout=min(
+                        remaining_time,
+                        0.1
+                    )
                 )
 
                 if new_danger:
+
                     print("new danger occurred")
 
                     danger_event.clear()
 
-                    # Only extend the warning duration.
-                    # The JSON status is already true.
                     warning_until = (
                         time.monotonic()
                         + WARNING_DURATION
                     )
 
+            if stop_event.is_set():
+                break
+
             warning_output.off()
+
+            time.sleep(SWITCH_DELAY)
+
+            safe_output.on()
+
+            print("STATE: SAFE -> green ON, red OFF")
+
             write_danger_status(False)
 
     finally:
-        print("danger event stopped")
+
+        print("warning thread stopped")
 
         warning_output.off()
+        safe_output.off()
+
         warning_output.close()
+        safe_output.close()
 
         write_danger_status(False)
