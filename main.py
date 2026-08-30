@@ -218,7 +218,12 @@ def main():
             
             # plot the measurement
             plot_clusters(ax, current_x, current_y, clusters_current_scan_tracked, danger, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
-            
+            ax.axvline(
+            x=2.0,
+            color="red",
+            linestyle="--",
+            linewidth=2
+            )
             # pause in between scans for animation effect
             plt.pause(0.001)
     

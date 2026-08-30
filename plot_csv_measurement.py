@@ -44,7 +44,7 @@ filepath_ego_velocity = os.path.join(
 
 filepath_dangerous_events_playback = create_filename_for_playbacks(
     BASE_DIR,
-    "danger_event_in_playback_13",
+    "danger_event_in_playback_test",
     "recording",
     "08082026_123125"
 )
@@ -369,7 +369,13 @@ def playback_lidar_with_tracking():
             config.PLOT_X_LIMIT,
             config.PLOT_Y_LIMIT
         )
-
+        # lateral distance threshold dx = 2 m
+        ax.axvline(
+        x=2.0,
+        color="red",
+        linestyle="--",
+        linewidth=2
+        )
 
         # show acceleration / braking condition in title
         if ego_acceleration is None:
