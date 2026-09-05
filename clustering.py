@@ -84,7 +84,7 @@ def merge_segments_into_clusters(segments):
 
     threshold_x = 0.5
     merge_threshold = 0.8
-    min_cluster_size = 10
+    min_cluster_size = 3
 
     merged_clusters = []
 

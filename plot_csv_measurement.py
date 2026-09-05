@@ -34,19 +34,19 @@ measurement_dir = os.path.join(BASE_DIR, "measurements")
 
 filepath_xy = os.path.join(
     measurement_dir,
-    "30082026_scan_xy_recording_233639.csv"
+    "01092026_scan_xy_recording_192125.csv"
 )
 
 filepath_ego_velocity = os.path.join(
     measurement_dir,
-    "30082026_velocities_x_y_recording_233639.csv"
+    "01092026_velocities_x_y_recording_192125.csv"
 )
 
 filepath_dangerous_events_playback = create_filename_for_playbacks(
     BASE_DIR,
-    "danger_event_in_playback_test",
+    "danger_event_in",
     "recording",
-    "30082026_233639"
+    "01092026_192125"
 )
 
 
@@ -336,8 +336,6 @@ def playback_lidar_with_tracking():
                 clusters_previous_scan,
                 clusters_two_scans_ago,
                 clusters_three_scans_ago,
-
-                # NEW
                 braking_condition,
                 ego_acceleration
             )
@@ -371,7 +369,7 @@ def playback_lidar_with_tracking():
         )
         # lateral distance threshold dx = 2 m
         ax.axvline(
-        x=2.0,
+        x=1.5,
         color="red",
         linestyle="--",
         linewidth=2
@@ -395,7 +393,7 @@ def playback_lidar_with_tracking():
         )
 
 
-        plt.pause(0.03)
+        plt.pause(0.02)
 
 
         # ====================================================

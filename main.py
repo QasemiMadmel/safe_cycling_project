@@ -35,7 +35,7 @@ running = True
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MEASUREMENT_DIR = os.path.join(BASE_DIR, "measurements")
 
-MAX_MEASUREMENT_FILES = 50*4 # Maximum amount of 200 files (50 measurements are kept in the measurement directory)
+MAX_MEASUREMENT_FILES = 100*4 # Maximum amount of 200 files (50 measurements are kept in the measurement directory)
 
 # function to stop measurement on "control+c"
 def stop_handler(signum, frame):
@@ -228,7 +228,7 @@ def main():
             # plot the measurement
             plot_clusters(ax, current_x, current_y, clusters_current_scan_tracked, danger, config.PLOT_X_LIMIT, config.PLOT_Y_LIMIT)
             ax.axvline(
-            x=2.0,
+            x=1.5,
             color="red",
             linestyle="--",
             linewidth=2

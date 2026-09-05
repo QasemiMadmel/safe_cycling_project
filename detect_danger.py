@@ -80,7 +80,7 @@ def distiguish_scenario_and_detect_danger(ego_velocity,
     
     longitudinal_distance_to_sensor_threshold = 8.0
     distance_to_distinguish_scenarios = 0.5
-    lateral_distance_to_sensor_threshold = 2
+    lateral_distance_to_sensor_threshold = 1.5
     absolute_minimal_distance_for_tailgating = 5.0
 
     # array for storing the results 

@@ -131,5 +131,5 @@ def plot_dangerous_events(filename):
 
 if __name__ == "__main__":
 
-    filename = "/home/strawberry/safe_cycling_project/measurements/30082026_danger_detected_recording_233639.csv"
+    filename = "/home/strawberry/Desktop/Data/01092026/192510/01092026_danger_detected_recording_192510.csv"
     plot_dangerous_events(filename)
